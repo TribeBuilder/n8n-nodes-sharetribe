@@ -1,0 +1,170 @@
+{
+	"id": "e2e-availability-exceptions-create",
+	"name": "[E2E] Availability Exceptions - Create and Delete",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "availabilityExceptions"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-availabilityexceptions-create-delete",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Availability Exceptions - Create and Delete\n\n⚠️ **MUTATING** — Self-cleaning\n\nTests creating then immediately deleting an availability exception.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Create all-day blocked exception (3 months from now)\n3. Delete the exception using its ID\n\n**Expected output:** Deleted exception confirmation",
+				"color": 5
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-create-exception",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Creates blocked all-day exception for Dec 25",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-delete-exception",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Deletes the exception to clean up",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-availabilityexceptions-create-delete",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-availabilityexceptions-create",
+			"name": "Create Exception",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "availabilityExceptions",
+				"operation": "create",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"available": false,
+				"allDay": true,
+				"date": "={{ $now.plus({months: 3}).startOf('day').toISO() }}"
+			}
+		},
+		{
+			"id": "sharetribe-availabilityexceptions-delete",
+			"name": "Delete Exception",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "availabilityExceptions",
+				"operation": "delete",
+				"exceptionId": "={{ $json.id }}"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Create Exception",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Create Exception": {
+			"main": [
+				[
+					{
+						"node": "Delete Exception",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Delete Exception": [
+			{
+				"json": {
+					"id": "ae-123",
+					"type": "availabilityException"
+				}
+			}
+		]
+	}
+}

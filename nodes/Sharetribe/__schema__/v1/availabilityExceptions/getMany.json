@@ -1,0 +1,22 @@
+{
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string"
+		},
+		"type": {
+			"type": "string",
+			"const": "availabilityException"
+		},
+		"start": {
+			"type": "string"
+		},
+		"end": {
+			"type": "object"
+		},
+		"seats": {
+			"type": "number"
+		}
+	},
+	"version": 1
+}

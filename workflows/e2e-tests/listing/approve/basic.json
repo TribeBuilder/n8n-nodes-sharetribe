@@ -1,0 +1,80 @@
+{
+	"id": "e2e-listing-approve",
+	"name": "[E2E] Listing - Approve",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "listing"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-listing-approve",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Listing - Approve\n\n**REQUIRED** — Approves the fixture listing so subsequent tests can use it.\n\nThe test runner creates the fixture listing as pendingApproval.\nThis workflow approves it before any read or transaction tests run.\n\n**Input:** `FIXTURE_LISTING_ID` (pendingApproval state)\n\n**Expected output:** Listing in published state",
+				"color": 5
+			}
+		},
+		{
+			"id": "trigger-listing-approve",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-listing-approve",
+			"name": "Approve Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "approve",
+				"listingId": "{{FIXTURE_LISTING_ID}}"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Approve Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	}
+}

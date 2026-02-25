@@ -1,0 +1,116 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 780,
+        "content": "## Try It Out!\n### Auto-accept Sharetribe bookings for instant booking\n\nEnable instant booking on your marketplace by automatically accepting incoming booking requests. When a customer initiates a transaction, this workflow immediately transitions it to the accepted state \u2014 no manual provider action required.\n\n### How it works\n* The Sharetribe Trigger polls for new `transaction/initiated` events.\n* The Transition node automatically advances the transaction to the accept state using the appropriate transition name.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Update the transition name in the Transition node to match your transaction process (e.g., `transition/accept`).\n3. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* A transaction process that supports an accept transition from the initiated state\n\n### How to customize\n* Add an IF node to only auto-accept bookings for specific listing types or providers.\n* Add a notification step (Gmail, Slack) to alert the provider when their listing gets an auto-accepted booking.\n* Modify the transition name to match your custom transaction process.\n* Use the resource filter on the trigger to limit to specific listings.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for new bookings\nThe Sharetribe Trigger polls for `transaction/initiated` events \u2014 these fire when a customer starts a new booking or purchase on your marketplace."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Auto-accept the booking\nTransitions the transaction to the accepted state. Update the transition name to match your marketplace's transaction process (check Console > Build > Transaction processes)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "New Booking Request",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/initiated"
+        ]
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sharetribe-transition",
+      "name": "Accept Booking",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "resource": "transaction",
+        "operation": "transition",
+        "transactionId": "={{ $json.resourceId }}",
+        "transition": "transition/accept"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "New Booking Request": {
+      "main": [
+        [
+          {
+            "node": "Accept Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "f4c78d84-de01-5b4b-890d-a2d614ea7dfd",
+  "name": "[template] Instant Booking Auto Accept"
+}

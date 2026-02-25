@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 960,
+        "content": "## Try It Out!\n### Generate and send PDF invoice after Sharetribe transaction\n\nAutomatically generate a PDF invoice and email it to the buyer when a transaction payment is confirmed. Uses a Code node to build the invoice HTML and an HTML-to-PDF API service to convert it.\n\n### How it works\n* The Sharetribe Trigger polls for `transaction/transitioned` events.\n* An IF node filters for the `transition/confirm-payment` transition.\n* A Code node generates invoice HTML with transaction details, line items, tax calculations, and formatted totals.\n* An HTTP Request node converts the HTML to a PDF using an external API.\n* Gmail sends the invoice PDF to the buyer as an email attachment.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Gmail account.\n3. Sign up for an HTML-to-PDF service (e.g., html2pdf.app, APITemplate.io, or CustomJS) and add your API key.\n4. Update the HTTP Request node URL and authentication for your chosen PDF service.\n5. Customize the invoice HTML in the Code node with your business details.\n6. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Gmail account\n* HTML-to-PDF API service account\n\n### How to customize\n* Add Sharetribe Get User / Get Listing nodes for complete buyer and item details.\n* Update the invoice template with your business address, logo, and tax rates.\n* Store invoices in Google Drive for record-keeping.\n* Add invoice numbering using a counter in Google Sheets.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 1. Listen for transitions\nPolls for `transaction/transitioned` events with the full resource for transaction details."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 2. Filter for payment\nOnly generates invoices for confirmed payments."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 3. Generate invoice HTML\nBuilds a professional invoice template with transaction data. Customize with your business details."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step4",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1020,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 4. Convert to PDF & email\nConverts the HTML to a PDF file via an external API, then emails it as an attachment."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "Transaction Transitioned",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/transitioned"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-payment-confirmed",
+      "name": "Payment Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.lastTransition }}",
+              "rightValue": "transition/confirm-payment",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "code-invoice",
+      "name": "Generate Invoice HTML",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Generate invoice HTML from transaction data\nconst transaction = $('Transaction Transitioned').first().json;\nconst resource = transaction.resource;\n\nconst transactionId = transaction.resourceId;\nconst date = new Date(transaction.createdAt).toLocaleDateString('en-US', {\n  year: 'numeric', month: 'long', day: 'numeric'\n});\n\n// Extract pricing (update field paths based on your transaction data)\nconst amount = resource.payinTotal?.amount || 0;\nconst currency = resource.payinTotal?.currency || 'USD';\nconst formattedAmount = (amount / 100).toFixed(2);\n\nconst invoiceHtml = `\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; }\n    .header { display: flex; justify-content: space-between; margin-bottom: 40px; }\n    .invoice-title { font-size: 28px; font-weight: bold; color: #333; }\n    .details { margin-bottom: 30px; }\n    .details p { margin: 4px 0; color: #555; }\n    table { width: 100%; border-collapse: collapse; margin: 20px 0; }\n    th { background: #f5f5f5; text-align: left; padding: 12px; border-bottom: 2px solid #ddd; }\n    td { padding: 12px; border-bottom: 1px solid #eee; }\n    .total-row td { font-weight: bold; font-size: 18px; border-top: 2px solid #333; }\n    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; color: #888; font-size: 12px; }\n  </style>\n</head>\n<body>\n  <div class=\"header\">\n    <div>\n      <div class=\"invoice-title\">INVOICE</div>\n      <p style=\"color: #888;\">Your Marketplace Name</p>\n    </div>\n    <div style=\"text-align: right;\">\n      <p><strong>Invoice #:</strong> INV-${transactionId.substring(0, 8).toUpperCase()}</p>\n      <p><strong>Date:</strong> ${date}</p>\n      <p><strong>Transaction:</strong> ${transactionId}</p>\n    </div>\n  </div>\n\n  <div class=\"details\">\n    <p><strong>Bill To:</strong></p>\n    <p>Customer Name (update with Get User data)</p>\n    <p>customer@example.com</p>\n  </div>\n\n  <table>\n    <thead>\n      <tr>\n        <th>Description</th>\n        <th style=\"text-align: right;\">Amount</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr>\n        <td>Marketplace Transaction</td>\n        <td style=\"text-align: right;\">${currency} ${formattedAmount}</td>\n      </tr>\n      <tr class=\"total-row\">\n        <td>Total</td>\n        <td style=\"text-align: right;\">${currency} ${formattedAmount}</td>\n      </tr>\n    </tbody>\n  </table>\n\n  <div class=\"footer\">\n    <p>Thank you for your business!</p>\n    <p>Your Marketplace Name | your-marketplace.com</p>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: { invoiceHtml, transactionId, date, amount: formattedAmount, currency } }];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "http-pdf",
+      "name": "Convert HTML to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1080,
+        200
+      ],
+      "parameters": {
+        "url": "https://api.html2pdf.app/v1/generate",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"html\": {{ JSON.stringify($json.invoiceHtml) }},\n  \"apiKey\": \"YOUR_API_KEY\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "gmail-send",
+      "name": "Email Invoice to Buyer",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1400,
+        200
+      ],
+      "parameters": {
+        "sendTo": "buyer@example.com",
+        "subject": "=Your invoice for transaction {{ $('Generate Invoice HTML').item.json.transactionId.substring(0, 8) }}",
+        "emailType": "text",
+        "message": "=Thank you for your purchase!\n\nPlease find your invoice attached.\n\nTransaction ID: {{ $('Generate Invoice HTML').item.json.transactionId }}\nAmount: {{ $('Generate Invoice HTML').item.json.currency }} {{ $('Generate Invoice HTML').item.json.amount }}\nDate: {{ $('Generate Invoice HTML').item.json.date }}\n\nBest regards,\nThe Marketplace Team",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "Transaction Transitioned": {
+      "main": [
+        [
+          {
+            "node": "Payment Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Generate Invoice HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Invoice HTML": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Email Invoice to Buyer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "6205cc14-c523-53da-a871-39a3b4537311",
+  "name": "[template] Invoice Generation After Transaction"
+}

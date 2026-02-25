@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "kill:n8n",
+			"problemMatcher": [],
+			"label": "npm run kill:n8n",
+			"detail": "Kill any running n8n instance on port 5678"
+		}
+	]
+}

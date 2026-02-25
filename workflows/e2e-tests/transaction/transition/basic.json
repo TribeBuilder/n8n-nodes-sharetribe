@@ -1,0 +1,145 @@
+{
+	"id": "e2e-transaction-transition",
+	"name": "[E2E] Transaction - Transition (Operator Reject)",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "transaction"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-tx-transition",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Transaction - Transition (Operator Reject)\n\n⚠️ **MUTATING** — NOT self-cleaning\n\nTests an operator transition on a fresh transaction.\n\n**Input:** `CREATED_TRANSACTION_ID` (injected by runner script)\n\n**Steps:**\n1. Manual trigger\n2. Perform operator-reject-request transition on the transaction\n\n**Expected output:** Transaction in request-rejected state\n\nThe runner script creates a new transaction via customer `transition/request-quote` before this workflow runs.",
+				"color": 5
+			}
+		},
+		{
+			"id": "trigger-tx-transition",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-tx-transition",
+			"name": "Operator Reject Transaction",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "transaction",
+				"operation": "transition",
+				"transactionId": "{{CREATED_TRANSACTION_ID}}",
+				"transition": {
+					"__rl": true,
+					"value": "{{MARKETPLACE_DECLINE_TRANSITION}}",
+					"mode": "name"
+				}
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-operator-decline",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Performs operator-reject-request transition on the runner-created transaction",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Operator Reject Transaction",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Operator Reject Transaction": [
+			{
+				"json": {
+					"data": {
+						"id": "e7f8a9b0-c1d2-3456-e7f8-a9b0c1d23456",
+						"type": "transaction",
+						"attributes": {
+							"processName": "default-negotiation",
+							"processVersion": 1,
+							"createdAt": "2025-03-15T09:00:00.000Z",
+							"lastTransitionedAt": "2025-03-15T09:05:00.000Z",
+							"lastTransition": "transition/operator-reject-request",
+							"payinTotal": {
+								"amount": 5000,
+								"currency": "USD"
+							},
+							"payoutTotal": {
+								"amount": 4500,
+								"currency": "USD"
+							},
+							"lineItems": [],
+							"protectedData": {},
+							"metadata": {}
+						}
+					}
+				}
+			}
+		]
+	}
+}

@@ -1,0 +1,118 @@
+{
+	"id": "e2e-marketplace-get",
+	"name": "[E2E] Marketplace - Get",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "marketplace"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-marketplace-get",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Marketplace - Get\n\nTests fetching the marketplace name.\n\n**Input:** None (uses configured credentials)\n\n**Steps:**\n1. Manual trigger\n2. Fetch marketplace name\n\n**Expected output:** Object with marketplace name string",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-marketplace",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Calls getName to retrieve marketplace info",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-marketplace-get",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-marketplace-get",
+			"name": "Get Marketplace",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "marketplace",
+				"operation": "get"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Marketplace",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Marketplace": [
+			{
+				"json": {
+					"name": "My Test Marketplace"
+				}
+			}
+		]
+	}
+}

@@ -1,0 +1,136 @@
+{
+	"id": "e2e-listing-get",
+	"name": "[E2E] Listing - Get",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "listing"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-listing-get",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Listing - Get\n\nTests fetching a single listing by ID.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Fetch listing by ID\n\n**Expected output:** Listing object with title, state, price, publicData",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-listing",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Fetch listing by ID",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-listing-get",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-listing-get",
+			"name": "Get Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "get",
+				"listingId": "{{FIXTURE_LISTING_ID}}"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Listing": [
+			{
+				"json": {
+					"data": {
+						"id": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+						"type": "listing",
+						"attributes": {
+							"title": "Vintage Bicycle",
+							"description": "A well-maintained vintage bicycle from the 1980s. Perfect for city commuting.",
+							"state": "published",
+							"price": {
+								"amount": 15000,
+								"currency": "USD"
+							},
+							"publicData": {
+								"category": "bicycles",
+								"condition": "good"
+							},
+							"createdAt": "2025-03-10T14:22:00.000Z"
+						}
+					}
+				}
+			}
+		]
+	}
+}

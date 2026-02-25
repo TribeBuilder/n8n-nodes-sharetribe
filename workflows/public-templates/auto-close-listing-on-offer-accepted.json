@@ -1,0 +1,189 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Auto-close Sharetribe listing when offer is accepted\n\nAutomatically close a listing when a negotiation offer is accepted and paid. Ideal for reverse marketplaces where customers post projects and providers submit offers \u2014 once an offer is accepted, the listing should close to prevent additional offers.\n\n### How it works\n* The Sharetribe Trigger polls for `transaction/transitioned` events with the full resource.\n* An IF node checks two conditions: the process is `default-negotiation` AND the transition is `transition/confirm-payment`.\n* The Close Listing action marks the listing as closed and undiscoverable.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Update the process name in the IF node if your negotiation process has a custom name.\n3. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* A negotiation-type listing configured in your marketplace\n\n### How to customize\n* Change the process name filter for different transaction types.\n* Add a Gmail notification to inform the listing author that their listing was closed.\n* Add a delay before closing to allow for cancellation.\n* Only close listings of specific categories by adding a listing type check.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for transitions\nPolls for `transaction/transitioned` events with the full resource to access process name and listing ID."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Check process & transition\nFilters for negotiation transactions where payment is confirmed. Both conditions must be true."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Close the listing\nCloses the listing associated with the transaction. The listing becomes undiscoverable in search."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "Transaction Transitioned",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/transitioned"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-negotiation-paid",
+      "name": "Negotiation Payment Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.processName }}",
+              "rightValue": "default-negotiation",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "leftValue": "={{ $json.resource.lastTransition }}",
+              "rightValue": "transition/confirm-payment",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sharetribe-close",
+      "name": "Close Listing",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "resource": "listing",
+        "operation": "close",
+        "listingId": "={{ $('Transaction Transitioned').item.json.resource.listingId }}"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Transaction Transitioned": {
+      "main": [
+        [
+          {
+            "node": "Negotiation Payment Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Negotiation Payment Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Close Listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "5c56c4f0-6269-5636-adf5-02a902ea6923",
+  "name": "[template] Auto Close Listing On Offer Accepted"
+}

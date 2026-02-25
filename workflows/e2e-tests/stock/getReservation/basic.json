@@ -1,0 +1,127 @@
+{
+	"id": "e2e-stock-get-reservation",
+	"name": "[E2E] Stock - Get Reservation",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "stock"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-stock-getreservation",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Stock - Get Reservation\n\nTests fetching a stock reservation by ID.\n\n**Input:** `FIXTURE_STOCK_RESERVATION_ID` from config (optional — skipped if not set)\n\n**Steps:**\n1. Manual trigger\n2. Fetch stock reservation by ID\n\n**Expected output:** Stock reservation with state and quantity",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-reservation",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Fetches the reservation by fixture ID",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-stock-getreservation",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-stock-getreservation",
+			"name": "Get Reservation",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "stock",
+				"operation": "getReservation",
+				"stockReservationId": "{{FIXTURE_STOCK_RESERVATION_ID}}"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Reservation",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Reservation": [
+			{
+				"json": {
+					"data": {
+						"id": "e5f6a7b8-c9d0-1234-e5f6-a7b8c9d01234",
+						"type": "stockReservation",
+						"attributes": {
+							"state": "proposed",
+							"quantity": 1,
+							"createdAt": "2024-08-12T11:45:00.000Z"
+						}
+					}
+				}
+			}
+		]
+	}
+}

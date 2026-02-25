@@ -1,0 +1,140 @@
+{
+	"id": "e2e-user-get",
+	"name": "[E2E] User - Get",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "user"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-user-get",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## User - Get\n\nTests fetching a single user by ID.\n\n**Input:** `FIXTURE_USER_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Fetch user by ID\n\n**Expected output:** User object with id, email, profile, state",
+				"color": 4
+			}
+		},
+		{
+			"id": "trigger-user-get",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-user-get",
+			"name": "Get User",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "user",
+				"operation": "get",
+				"userId": "{{FIXTURE_USER_ID}}"
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger starts the workflow",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-user",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Fetches user by fixture ID and returns profile data",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get User",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get User": [
+			{
+				"json": {
+					"data": {
+						"id": "d1e2f3a4-b5c6-7890-d1e2-f3a4b5c67890",
+						"type": "user",
+						"attributes": {
+							"email": "testuser@example.com",
+							"profile": {
+								"firstName": "Test",
+								"lastName": "User",
+								"displayName": "Test U",
+								"abbreviatedName": "TU",
+								"bio": null,
+								"publicData": {},
+								"protectedData": {},
+								"privateData": {},
+								"metadata": {}
+							},
+							"state": "active",
+							"createdAt": "2025-01-15T10:30:00.000Z",
+							"banned": false,
+							"deleted": false
+						}
+					}
+				}
+			}
+		]
+	}
+}

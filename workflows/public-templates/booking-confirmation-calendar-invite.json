@@ -1,0 +1,215 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 960,
+        "content": "## Try It Out!\n### Send Sharetribe booking confirmation with calendar invite via Gmail\n\nSend booking confirmation emails with an attached .ics calendar file so customers and providers can add the booking directly to their calendar app (Google Calendar, Outlook, Apple Calendar, etc.).\n\n### How it works\n* The Sharetribe Trigger polls for `transaction/transitioned` events.\n* An IF node filters for accepted booking transitions.\n* A Code node generates a standard iCalendar (.ics) file with booking dates, title, and description.\n* Gmail sends the confirmation email with the .ics file attached.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Gmail account.\n3. Update the IF node's transition name to match your booking acceptance transition.\n4. Customize the Code node's event details (location, description, organizer).\n5. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Gmail account\n* A booking-type transaction process with accept transitions\n\n### How to customize\n* Add a Sharetribe Get User node to include customer/provider names in the calendar event.\n* Modify the Code node to add location data from listing metadata.\n* Send separate emails to customer and provider with different details.\n* Add a Sharetribe Get Listing node for the listing title.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for transitions\nPolls for `transaction/transitioned` events with the full resource including booking dates and listing info."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Filter for booking acceptance\nOnly continues when a booking transaction is accepted. Update the transition name for your process."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 3. Generate .ics & send email\nThe Code node creates a standard iCalendar file format with booking dates. Gmail attaches it to the confirmation email. Recipients can open the .ics to add it to any calendar app."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "Transaction Transitioned",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/transitioned"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-booking-accepted",
+      "name": "Booking Accepted?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.lastTransition }}",
+              "rightValue": "accept",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "code-ics",
+      "name": "Generate Calendar File",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "jsCode": "// Generate an iCalendar (.ics) file for the booking\nconst transaction = $('Transaction Transitioned').first().json;\nconst resource = transaction.resource;\n\n// Extract booking dates from transaction resource\n// Update these field paths based on your transaction data structure\nconst bookingStart = resource.bookingStart || resource.booking?.start || new Date().toISOString();\nconst bookingEnd = resource.bookingEnd || resource.booking?.end || new Date().toISOString();\nconst listingTitle = resource.listingTitle || 'Marketplace Booking';\nconst transactionId = transaction.resourceId;\n\n// Format dates for iCalendar (YYYYMMDDTHHmmssZ)\nfunction formatIcsDate(isoDate) {\n  return new Date(isoDate).toISOString().replace(/[-:]/g, '').replace(/\\.\\d{3}/, '');\n}\n\nconst now = formatIcsDate(new Date().toISOString());\nconst start = formatIcsDate(bookingStart);\nconst end = formatIcsDate(bookingEnd);\n\n// Build the .ics content\nconst icsContent = [\n  'BEGIN:VCALENDAR',\n  'VERSION:2.0',\n  'PRODID:-//Sharetribe Marketplace//n8n Workflow//EN',\n  'CALSCALE:GREGORIAN',\n  'METHOD:PUBLISH',\n  'BEGIN:VEVENT',\n  `DTSTART:${start}`,\n  `DTEND:${end}`,\n  `DTSTAMP:${now}`,\n  `UID:${transactionId}@sharetribe-marketplace`,\n  `SUMMARY:${listingTitle}`,\n  `DESCRIPTION:Booking confirmed for ${listingTitle}. Transaction ID: ${transactionId}`,\n  'STATUS:CONFIRMED',\n  'PRIORITY:1',\n  'END:VEVENT',\n  'END:VCALENDAR',\n].join('\\r\\n');\n\n// Convert to base64 for binary attachment\nconst base64Content = Buffer.from(icsContent).toString('base64');\n\nreturn [\n  {\n    json: {\n      ...transaction,\n      icsContent,\n      bookingStart,\n      bookingEnd,\n      listingTitle,\n    },\n    binary: {\n      data: {\n        data: base64Content,\n        mimeType: 'text/calendar',\n        fileName: `booking-${transactionId.substring(0, 8)}.ics`,\n      },\n    },\n  },\n];"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "gmail-send",
+      "name": "Send Booking Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1080,
+        200
+      ],
+      "parameters": {
+        "sendTo": "customer@example.com",
+        "subject": "=Booking confirmed: {{ $json.listingTitle }}",
+        "emailType": "text",
+        "message": "=Your booking has been confirmed!\n\nListing: {{ $json.listingTitle }}\nStart: {{ $json.bookingStart }}\nEnd: {{ $json.bookingEnd }}\nTransaction ID: {{ $json.resourceId }}\n\nA calendar invite (.ics file) is attached to this email. Open it to add this booking to your calendar.\n\nThank you for using our marketplace!",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "data"
+              }
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "Transaction Transitioned": {
+      "main": [
+        [
+          {
+            "node": "Booking Accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Accepted?": {
+      "main": [
+        [
+          {
+            "node": "Generate Calendar File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Calendar File": {
+      "main": [
+        [
+          {
+            "node": "Send Booking Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "6abc78b8-0274-5d2d-92e6-c688289267f6",
+  "name": "[template] Booking Confirmation Calendar Invite"
+}

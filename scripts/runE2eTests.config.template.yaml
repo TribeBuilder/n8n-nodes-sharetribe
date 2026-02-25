@@ -1,0 +1,44 @@
+# Sharetribe E2E Test Configuration
+# Copy this file and fill in your values:
+#   cp scripts/runE2eTests.config.template.yaml scripts/runE2eTests.config.yaml
+#
+# IMPORTANT: runE2eTests.config.yaml is gitignored - never commit real credentials
+
+# Sharetribe API credentials (required)
+# The Integration API and Marketplace API have separate client IDs.
+# Find these in Sharetribe Console -> Build -> Applications.
+integrationApi:
+  clientId: ""
+  clientSecret: ""
+
+marketplaceApi:
+  clientId: ""
+
+# All settings below are optional — sensible defaults are used if omitted.
+
+# Test provider account (listing author)
+# Auto-created and approved if not found in the marketplace.
+# Used as FIXTURE_USER_ID in test workflows.
+# testProvider:
+#   email: "e2e-provider@test.example.com"
+#   password: "Test1234!"
+
+# Test customer account (transaction initiator)
+# Auto-created and approved if not found in the marketplace.
+# Sharetribe requires a different user than the listing author to create transactions.
+# testUser:
+#   email: "e2e-customer@test.example.com"
+#   password: "Test1234!"
+
+# Fixture IDs (all optional — auto-created from test users if empty)
+# Set these to use specific pre-existing resources instead of auto-creating.
+# fixtures:
+#   userId: ""              # uses testProvider's ID if empty
+#   listingId: ""           # creates a published test listing if empty
+#   transactionId: ""       # creates a test transaction if empty
+#   pendingUserId: ""       # skips approve test if empty
+#   stockReservationId: ""  # skips stock reservation test if empty
+
+# n8n instance config
+# n8n:
+#   userFolder: "~/.n8n-node-cli"  # must match the N8N_USER_FOLDER in npm run n8n

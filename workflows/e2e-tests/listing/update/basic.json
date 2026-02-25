@@ -1,0 +1,204 @@
+{
+	"id": "e2e-listing-update",
+	"name": "[E2E] Listing - Update",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "listing"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-listing-update",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Listing - Update\n\n⚠️ **MUTATING** — Self-cleaning\n\nTests updating listing publicData, then reverting.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Set `E2eTestFlag` on listing publicData\n3. Delete `E2eTestFlag` to restore original state\n\n**Expected output:** Listing with clean publicData",
+				"color": 5
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-set-test-data",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Set E2eTestFlag on listing publicData",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-revert-test-data",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Delete E2eTestFlag to restore original state",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-listing-update",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-listing-update-set",
+			"name": "Set Test Data",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "update",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"listingFields": {
+					"publicData": {
+						"mode": "manual",
+						"fields": {
+							"values": [
+								{
+									"name": "E2eTestFlag",
+									"type": "string",
+									"value": "true"
+								}
+							]
+						}
+					}
+				}
+			}
+		},
+		{
+			"id": "sharetribe-listing-update-revert",
+			"name": "Revert Test Data",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "update",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"deleteFields": {
+					"paths": [
+						{
+							"path": "publicData.E2eTestFlag"
+						}
+					]
+				}
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Set Test Data",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Set Test Data": {
+			"main": [
+				[
+					{
+						"node": "Revert Test Data",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Revert Test Data": [
+			{
+				"json": {
+					"data": {
+						"id": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+						"type": "listing",
+						"attributes": {
+							"title": "Vintage Bicycle",
+							"description": "A well-maintained vintage bicycle from the 1980s. Perfect for city commuting.",
+							"state": "published",
+							"price": {
+								"amount": 15000,
+								"currency": "USD"
+							},
+							"publicData": {
+								"category": "bicycles",
+								"condition": "good"
+							},
+							"createdAt": "2025-03-10T14:22:00.000Z"
+						}
+					}
+				}
+			}
+		]
+	}
+}

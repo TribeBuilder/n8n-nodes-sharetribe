@@ -1,0 +1,215 @@
+{
+	"id": "e2e-transaction-update-metadata",
+	"name": "[E2E] Transaction - Update Metadata",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "transaction"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-tx-update-metadata",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Transaction - Update Metadata\n\n⚠️ **MUTATING** — Self-cleaning\n\nTests updating transaction metadata, then reverting.\n\n**Input:** `FIXTURE_TRANSACTION_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Set `E2eTestFlag` on transaction metadata\n3. Delete `E2eTestFlag` to restore original state\n\n**Expected output:** Transaction with clean metadata",
+				"color": 5
+			}
+		},
+		{
+			"id": "trigger-tx-update-metadata",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-tx-set-metadata",
+			"name": "Set Test Metadata",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "transaction",
+				"operation": "updateMetadata",
+				"transactionId": "{{FIXTURE_TRANSACTION_ID}}",
+				"transactionFields": {
+					"metadata": {
+						"metadataValues": {
+							"mode": "manual",
+							"fields": {
+								"assignments": [
+									{
+										"name": "E2eTestFlag",
+										"type": "string",
+										"value": "true"
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		{
+			"id": "sharetribe-tx-revert-metadata",
+			"name": "Revert Test Metadata",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "transaction",
+				"operation": "updateMetadata",
+				"transactionId": "{{FIXTURE_TRANSACTION_ID}}",
+				"fieldDeletions": {
+					"deletions": [
+						{
+							"dataType": "metadata",
+							"fieldPath": {
+								"__rl": true,
+								"value": "E2eTestFlag",
+								"mode": "name"
+							}
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-set-metadata",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Sets metadata.E2eTestFlag = 'true'",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-revert-metadata",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Deletes E2eTestFlag from metadata to revert",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Set Test Metadata",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Set Test Metadata": {
+			"main": [
+				[
+					{
+						"node": "Revert Test Metadata",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Revert Test Metadata": [
+			{
+				"json": {
+					"data": {
+						"id": "b1c2d3e4-f5a6-7890-b1c2-d3e4f5a67890",
+						"type": "transaction",
+						"attributes": {
+							"processName": "default-buying",
+							"processVersion": 1,
+							"createdAt": "2025-03-10T08:15:00.000Z",
+							"lastTransitionedAt": "2025-03-10T08:20:00.000Z",
+							"lastTransition": "transition/confirm-payment",
+							"payinTotal": {
+								"amount": 5000,
+								"currency": "USD"
+							},
+							"payoutTotal": {
+								"amount": 4500,
+								"currency": "USD"
+							},
+							"lineItems": [],
+							"protectedData": {},
+							"metadata": {}
+						}
+					}
+				}
+			}
+		]
+	}
+}

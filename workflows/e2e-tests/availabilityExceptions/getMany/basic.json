@@ -1,0 +1,129 @@
+{
+	"id": "e2e-availability-exceptions-getmany",
+	"name": "[E2E] Availability Exceptions - Get Many",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "availabilityExceptions"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-availabilityexceptions-getmany",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Availability Exceptions - Get Many\n\nTests fetching availability exceptions for a listing.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Fetch exceptions for the next 6 months\n\n**Expected output:** Array of availability exception objects",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-exceptions",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Queries exceptions for the next 6 months",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-availabilityexceptions-getmany",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-availabilityexceptions-getmany",
+			"name": "Get Availability Exceptions",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "availabilityExceptions",
+				"operation": "getMany",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"start": "={{ $now.toISO() }}",
+				"end": "={{ $now.plus({months: 6}).toISO() }}",
+				"returnAll": false,
+				"limit": 10
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Availability Exceptions",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Availability Exceptions": [
+			{
+				"json": {
+					"id": "ae-a1b2c3d4-0001",
+					"type": "availabilityException",
+					"attributes": {
+						"start": "2025-07-04T00:00:00.000Z",
+						"end": "2025-07-05T00:00:00.000Z",
+						"seats": 0
+					}
+				}
+			}
+		]
+	}
+}

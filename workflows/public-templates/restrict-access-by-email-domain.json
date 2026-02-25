@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Restrict Sharetribe access by email domain\n\nAutomatically approve users who sign up with an allowed email domain (e.g., @company.com) and leave others in pending approval. Perfect for corporate or organization-restricted marketplaces.\n\n### How it works\n* The Sharetribe Trigger polls for `user/created` events with the full user resource.\n* An IF node checks if the user's email ends with the allowed domain.\n* Matching users are automatically approved; others remain in `pendingApproval` for manual review.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Enable \"Require user approval\" in Console > Build > General.\n3. Update the IF node's domain value (e.g., `@company.com`, `@university.edu`).\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* User approval enabled in marketplace settings\n\n### How to customize\n* Add multiple domain conditions using the OR combinator for multiple allowed domains.\n* Add a Gmail node on the false branch to notify rejected users.\n* Chain with Update Permissions to grant different access levels per domain.\n* Add logging to Google Sheets for audit purposes.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for new users\nPolls for `user/created` events with the full resource to access the user's email address."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Check email domain\nVerifies the user's email ends with the allowed domain. Update `@company.com` to your required domain."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Approve the user\nApproves users with matching email domains, setting their state to active."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-new-user",
+      "name": "New User Signup",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "user"
+        ],
+        "eventTypes": [
+          "user/created"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-email-domain",
+      "name": "Allowed Email Domain?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.email }}",
+              "rightValue": "@company.com",
+              "operator": {
+                "type": "string",
+                "operation": "endsWith"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sharetribe-approve",
+      "name": "Approve User",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "approve",
+        "userId": "={{ $('New User Signup').item.json.resourceId }}"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "New User Signup": {
+      "main": [
+        [
+          {
+            "node": "Allowed Email Domain?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Allowed Email Domain?": {
+      "main": [
+        [
+          {
+            "node": "Approve User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "8a1a844c-ce27-55d0-b237-b2df38b4ed68",
+  "name": "[template] Restrict Access By Email Domain"
+}

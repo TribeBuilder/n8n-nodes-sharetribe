@@ -1,0 +1,229 @@
+{
+	"id": "e2e-listing-create",
+	"name": "[E2E] Listing - Create, Approve, Close",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "listing"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-listing-create-approve-close",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Listing - Create, Approve, Close\n\n⚠️ **MUTATING** — Leaves a closed listing\n\nTests the full listing lifecycle. Integration API always creates in pendingApproval state.\n\n**Input:** `FIXTURE_USER_ID` from config (as author)\n\n**Steps:**\n1. Manual trigger\n2. Create listing (pendingApproval state)\n3. Approve listing (published state)\n4. Close listing (closed state — cleanup)\n\n**Expected output:** Listing in closed state",
+				"color": 5
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-create-listing",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Creates listing titled 'E2E Test Listing' as pendingApproval",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-approve-listing",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Approves the new listing using its ID from step 2",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-close-listing",
+			"name": "Step 4",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				900,
+				460
+			],
+			"parameters": {
+				"content": "**Step 4:** Closes the listing for cleanup",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-listing-create-approve-close",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-listing-create",
+			"name": "Create Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "create",
+				"title": "E2E Test Listing",
+				"authorId": "{{FIXTURE_USER_ID}}",
+				"state": "pendingApproval",
+				"listingFields": {
+					"description": "Temporary listing created by E2E test runner. Will be closed after test."
+				}
+			}
+		},
+		{
+			"id": "sharetribe-listing-approve",
+			"name": "Approve Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "approve",
+				"listingId": "={{ $json.id }}"
+			}
+		},
+		{
+			"id": "sharetribe-listing-close",
+			"name": "Close Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				900,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "close",
+				"listingId": "={{ $json.id }}"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Create Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Create Listing": {
+			"main": [
+				[
+					{
+						"node": "Approve Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Approve Listing": {
+			"main": [
+				[
+					{
+						"node": "Close Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Close Listing": [
+			{
+				"json": {
+					"data": {
+						"id": "d4e5f6a7-b8c9-0123-d4e5-f6a7b8c90123",
+						"type": "listing",
+						"attributes": {
+							"title": "E2E Test Listing",
+							"description": "Temporary listing created by E2E test runner. Will be closed after test.",
+							"state": "closed",
+							"price": null,
+							"publicData": {},
+							"createdAt": "2025-03-12T08:00:00.000Z"
+						}
+					}
+				}
+			}
+		]
+	}
+}

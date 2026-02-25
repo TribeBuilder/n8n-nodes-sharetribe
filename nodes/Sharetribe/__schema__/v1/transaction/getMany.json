@@ -1,0 +1,130 @@
+{
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string"
+		},
+		"type": {
+			"type": "string",
+			"const": "transaction"
+		},
+		"createdAt": {
+			"type": "string"
+		},
+		"processName": {
+			"type": "string"
+		},
+		"processVersion": {
+			"type": "number"
+		},
+		"lastTransition": {
+			"type": "string"
+		},
+		"lastTransitionedAt": {
+			"type": "object"
+		},
+		"payinTotal": {
+			"type": "object",
+			"properties": {
+				"amount": {
+					"type": "number"
+				},
+				"currency": {
+					"type": "string"
+				}
+			}
+		},
+		"payoutTotal": {
+			"type": "object"
+		},
+		"lineItems": {
+			"type": "array",
+			"items": {
+				"type": "object"
+			}
+		},
+		"protectedData": {
+			"type": "object"
+		},
+		"metadata": {
+			"type": "object"
+		},
+		"customer": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "user"
+				}
+			}
+		},
+		"provider": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "user"
+				}
+			}
+		},
+		"listing": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "listing"
+				}
+			}
+		},
+		"booking": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "booking"
+				}
+			}
+		},
+		"reviews": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"messages": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	},
+	"version": 1
+}

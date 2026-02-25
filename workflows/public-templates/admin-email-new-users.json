@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Send admin email alerts for new Sharetribe users via Gmail\n\nAutomatically notify marketplace admins whenever a new user signs up. This workflow uses the Sharetribe Asset Get action to pull your marketplace's configured email template text, so your notification emails stay consistent with your brand.\n\n### How it works\n* The Sharetribe Trigger polls for new user creation events.\n* The Asset Get node retrieves your marketplace's email template text from Sharetribe's CDN.\n* Gmail sends the admin a notification email with the new user's details and your marketplace email copy.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Gmail account.\n3. Update the Gmail node's \"To\" field with your admin email address.\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Gmail account\n\n### How to customize\n* Change the email recipient to any address or distribution list.\n* Modify the email subject and body to match your notification preferences.\n* Use the Asset Get filter to pull specific email template fields.\n* Replace Gmail with any other email node (Outlook, SMTP, etc.).\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 1. Listen for new users\nThe Sharetribe Trigger polls your marketplace for `user/created` events. Each time a new user signs up, this node outputs the event data including the user's resource ID."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 2. Get email template text\nRetrieves your marketplace's email text content from Sharetribe's Asset Delivery API. This keeps your notification emails consistent with the copy configured in your Sharetribe Console."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 3. Send admin notification\nSends an email to your admin address with details about the new user. Customize the subject line, body, and recipient as needed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-new-user",
+      "name": "New User Signup",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "user"
+        ],
+        "eventTypes": [
+          "user/created"
+        ]
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "asset-email-texts",
+      "name": "Get Email Template Text",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "resource": "asset",
+        "operation": "get",
+        "assetCategory": "/content/email-texts.json",
+        "accessType": "alias",
+        "enableEmailTextsFilter": true,
+        "emailTextsCustomFilter": "user"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-send",
+      "name": "Email Admin Notification",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "sendTo": "admin@your-marketplace.com",
+        "subject": "=New user signed up: {{ $('New User Signup').item.json.resourceId }}",
+        "emailType": "text",
+        "message": "=A new user has joined your marketplace.\n\nUser ID: {{ $('New User Signup').item.json.resourceId }}\nEvent: {{ $('New User Signup').item.json.eventType }}\nDate: {{ $('New User Signup').item.json.createdAt }}\n\nView all users: https://console.sharetribe.com/users"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "New User Signup": {
+      "main": [
+        [
+          {
+            "node": "Get Email Template Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email Template Text": {
+      "main": [
+        [
+          {
+            "node": "Email Admin Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "37f73aa3-bb53-516a-989c-cc7942e57dcd",
+  "name": "[template] Admin Email New Users"
+}

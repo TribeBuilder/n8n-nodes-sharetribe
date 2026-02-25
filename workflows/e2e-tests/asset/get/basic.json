@@ -1,0 +1,123 @@
+{
+	"id": "e2e-asset-get",
+	"name": "[E2E] Asset - Get",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "asset"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-asset-get",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Asset - Get\n\nTests fetching a marketplace asset/configuration.\n\n**Input:** None (fetches branding asset)\n\n**Steps:**\n1. Manual trigger\n2. Fetch branding.json asset\n\n**Expected output:** Branding configuration object",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-asset",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Fetches /design/branding.json via alias",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-asset-get",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-asset-get",
+			"name": "Get Asset",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "asset",
+				"operation": "get",
+				"assetCategory": "/design/branding.json",
+				"accessType": "alias"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Asset",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Asset": [
+			{
+				"json": {
+					"data": {
+						"marketplaceColor": "#000000",
+						"logo": null
+					}
+				}
+			}
+		]
+	}
+}

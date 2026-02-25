@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Send payout setup reminder to new Sharetribe providers via Gmail\n\nAutomatically send new providers a reminder email to set up their payout details. This ensures providers can receive payments as soon as their first transaction completes.\n\n### How it works\n* The Sharetribe Trigger polls for new user creation events.\n* The Asset Get node retrieves your marketplace's email template text for payout reminders.\n* Gmail sends a personalized reminder to the new provider's email address.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Gmail account.\n3. Customize the email body with your marketplace's payout setup instructions.\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Gmail account\n\n### How to customize\n* Add an IF node to only send reminders to providers (filter by user type in publicData).\n* Change the delay before sending (add a Wait node).\n* Modify the email content with specific payout setup links for your marketplace.\n* Replace Gmail with any other email node (Outlook, SMTP, etc.).\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 1. Listen for new users\nThe Sharetribe Trigger polls your marketplace for `user/created` events. Each new signup triggers this workflow."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 2. Get email template text\nRetrieves your marketplace's payout-related email copy from Sharetribe's Asset Delivery API. Filter is set to \"payout\" to return only relevant email fields."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 320,
+        "content": "## 3. Send payout reminder\nSends the reminder email directly to the new user's email address. The user's email comes from the trigger event data."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-new-user",
+      "name": "New User Signup",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "user"
+        ],
+        "eventTypes": [
+          "user/created"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "asset-email-texts",
+      "name": "Get Email Template Text",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "resource": "asset",
+        "operation": "get",
+        "assetCategory": "/content/email-texts.json",
+        "accessType": "alias",
+        "enableEmailTextsFilter": true,
+        "emailTextsCustomFilter": "payout"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-send",
+      "name": "Send Payout Reminder",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "sendTo": "={{ $('New User Signup').item.json.resource.email }}",
+        "subject": "Set up your payout details to start receiving payments",
+        "emailType": "text",
+        "message": "=Welcome to the marketplace!\n\nTo receive payments from your transactions, please set up your payout details. This ensures you get paid as soon as your first booking or sale completes.\n\nVisit your account settings to add your bank details or connect your Stripe account.\n\nIf you have any questions, feel free to reach out to our support team.\n\nBest regards,\nThe Marketplace Team"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "New User Signup": {
+      "main": [
+        [
+          {
+            "node": "Get Email Template Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email Template Text": {
+      "main": [
+        [
+          {
+            "node": "Send Payout Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "8eadec03-8f1f-56ab-940a-d38ad45e5de5",
+  "name": "[template] Provider Payout Reminder"
+}

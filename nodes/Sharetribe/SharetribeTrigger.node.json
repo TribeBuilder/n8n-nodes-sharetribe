@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-base.sharetribeTrigger",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Development", "Analytics", "Productivity"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://www.sharetribe.com/docs/introduction/getting-started-with-integration-api/#create-integration-api-application-in-sharetribe-console"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://www.sharetribe.com/api-reference/integration.html#events"
+			}
+		]
+	}
+}

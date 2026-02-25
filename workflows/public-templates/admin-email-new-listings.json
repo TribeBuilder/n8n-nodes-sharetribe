@@ -1,0 +1,246 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 900,
+        "content": "## Try It Out!\n### Send admin email alerts for new Sharetribe listings via Gmail\n\nNotify marketplace admins when new listings are created. This workflow handles both published listings and listings pending approval, routing them to separate email notifications so admins can take action.\n\n### How it works\n* The Sharetribe Trigger polls for `listing/updated` events (listings pass through multiple states during creation).\n* An IF node checks the listing state \u2014 routing `pendingApproval` listings to an urgent approval notification, and `published` listings to a standard notification.\n* The Asset Get node retrieves your marketplace's email template text.\n* Gmail sends the appropriate notification to your admin email.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Gmail account.\n3. Update the \"To\" field in both Gmail nodes with your admin email address.\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Gmail account\n\n### How to customize\n* If your marketplace doesn't require listing approval, remove the pendingApproval branch.\n* Add listing details (title, description) by including the `resource` field in the trigger output.\n* Replace Gmail with Slack for team channel notifications.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for listing updates\nPolls for `listing/updated` events. New listings go through state changes (draft \u2192 pendingApproval \u2192 published), so we filter on the update event."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Check listing state\nRoutes the event based on listing state. Pending approval listings need urgent admin attention, while published listings are informational."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Send notification\nSends the appropriate email based on the listing state. Pending approval emails include a link to the Console for review."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-listing",
+      "name": "Listing Updated",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "listing"
+        ],
+        "eventTypes": [
+          "listing/updated"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-listing-state",
+      "name": "Check Listing State",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.state }}",
+              "rightValue": "pendingApproval",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "asset-email-texts",
+      "name": "Get Email Template Text",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        100
+      ],
+      "parameters": {
+        "resource": "asset",
+        "operation": "get",
+        "assetCategory": "/content/email-texts.json",
+        "accessType": "alias",
+        "enableEmailTextsFilter": true,
+        "emailTextsCustomFilter": "listing"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-pending",
+      "name": "Email: Listing Pending Approval",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1080,
+        100
+      ],
+      "parameters": {
+        "sendTo": "admin@your-marketplace.com",
+        "subject": "=Action required: Listing pending approval ({{ $('Listing Updated').item.json.resourceId }})",
+        "emailType": "text",
+        "message": "=A new listing requires your approval.\n\nListing ID: {{ $('Listing Updated').item.json.resourceId }}\nTitle: {{ $('Listing Updated').item.json.resource.title }}\nState: pendingApproval\nDate: {{ $('Listing Updated').item.json.createdAt }}\n\nReview and approve in Console: https://console.sharetribe.com/a/listings"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    },
+    {
+      "id": "gmail-published",
+      "name": "Email: New Listing Published",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        760,
+        340
+      ],
+      "parameters": {
+        "sendTo": "admin@your-marketplace.com",
+        "subject": "=New listing published: {{ $('Listing Updated').item.json.resource.title }}",
+        "emailType": "text",
+        "message": "=A new listing has been published on your marketplace.\n\nListing ID: {{ $('Listing Updated').item.json.resourceId }}\nTitle: {{ $('Listing Updated').item.json.resource.title }}\nDate: {{ $('Listing Updated').item.json.createdAt }}\n\nView all listings: https://console.sharetribe.com/a/listings"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "Listing Updated": {
+      "main": [
+        [
+          {
+            "node": "Check Listing State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Listing State": {
+      "main": [
+        [
+          {
+            "node": "Get Email Template Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email: New Listing Published",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email Template Text": {
+      "main": [
+        [
+          {
+            "node": "Email: Listing Pending Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "1595c532-4ea6-5807-8069-c94cf306bd4f",
+  "name": "[template] Admin Email New Listings"
+}

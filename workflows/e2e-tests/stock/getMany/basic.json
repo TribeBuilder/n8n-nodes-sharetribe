@@ -1,0 +1,142 @@
+{
+	"id": "e2e-stock-getmany",
+	"name": "[E2E] Stock - Get Adjustments",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "stock"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-stock-getmany",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Stock - Get Adjustments\n\nTests fetching stock adjustments for a listing within a date range.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Fetch stock adjustments (last 30 days)\n\n**Expected output:** Array of stock adjustment objects with at and quantity",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-stock-adjustments",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Queries stock adjustments for the fixture listing",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-stock-getmany",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-stock-getmany",
+			"name": "Get Stock Adjustments",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "stock",
+				"operation": "getMany",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"createdAtStart": "={{ $now.minus({days: 30}).toISO() }}",
+				"createdAtEnd": "={{ $now.toISO() }}",
+				"returnAll": false,
+				"limit": 5
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Stock Adjustments",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Stock Adjustments": [
+			{
+				"json": {
+					"data": {
+						"id": "c3d4e5f6-a7b8-9012-c3d4-e5f6a7b89012",
+						"type": "stockAdjustment",
+						"attributes": {
+							"at": "2024-03-15T09:00:00.000Z",
+							"quantity": 5
+						}
+					}
+				}
+			},
+			{
+				"json": {
+					"data": {
+						"id": "d4e5f6a7-b8c9-0123-d4e5-f6a7b8c90123",
+						"type": "stockAdjustment",
+						"attributes": {
+							"at": "2024-06-20T14:30:00.000Z",
+							"quantity": -2
+						}
+					}
+				}
+			}
+		]
+	}
+}

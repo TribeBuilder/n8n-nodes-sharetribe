@@ -1,0 +1,19 @@
+{
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string"
+		},
+		"type": {
+			"type": "string",
+			"const": "stockReservation"
+		},
+		"quantity": {
+			"type": "number"
+		},
+		"state": {
+			"type": "string"
+		}
+	},
+	"version": 1
+}

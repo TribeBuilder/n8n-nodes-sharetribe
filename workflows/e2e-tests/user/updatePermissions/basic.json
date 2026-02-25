@@ -1,0 +1,198 @@
+{
+	"id": "e2e-user-update-permissions",
+	"name": "[E2E] User - Update Permissions",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "user"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-user-updatepermissions",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## User - Update Permissions\n\n⚠️ **MUTATING** — Self-cleaning\n\nTests toggling user permissions, then restoring.\n\n**Input:** `FIXTURE_USER_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Disable `canCreateListings` permission\n3. Re-enable `canCreateListings` permission\n\n**Expected output:** User with all permissions restored to true",
+				"color": 5
+			}
+		},
+		{
+			"id": "trigger-user-updatepermissions",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-user-updatepermissions-disable",
+			"name": "Disable Listings Permission",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "user",
+				"operation": "updatePermissions",
+				"userId": "{{FIXTURE_USER_ID}}",
+				"canCreateListings": false,
+				"canInitiateTransactions": true,
+				"canRead": true
+			}
+		},
+		{
+			"id": "sharetribe-user-updatepermissions-restore",
+			"name": "Restore Listings Permission",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "user",
+				"operation": "updatePermissions",
+				"userId": "{{FIXTURE_USER_ID}}",
+				"canCreateListings": true,
+				"canInitiateTransactions": true,
+				"canRead": true
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger starts the workflow",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-disable-permission",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Sets canCreateListings=false (other permissions stay true)",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-restore-permission",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Restores canCreateListings=true",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Disable Listings Permission",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Disable Listings Permission": {
+			"main": [
+				[
+					{
+						"node": "Restore Listings Permission",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Restore Listings Permission": [
+			{
+				"json": {
+					"data": {
+						"id": "d1e2f3a4-b5c6-7890-d1e2-f3a4b5c67890",
+						"type": "user",
+						"attributes": {
+							"email": "testuser@example.com",
+							"profile": {
+								"firstName": "Test",
+								"lastName": "User",
+								"displayName": "Test U",
+								"abbreviatedName": "TU",
+								"bio": null,
+								"publicData": {},
+								"protectedData": {},
+								"privateData": {},
+								"metadata": {}
+							},
+							"state": "active",
+							"createdAt": "2025-01-15T10:30:00.000Z",
+							"banned": false,
+							"deleted": false,
+							"permissions": {
+								"canCreateListings": true,
+								"canInitiateTransactions": true,
+								"canRead": true
+							}
+						}
+					}
+				}
+			}
+		]
+	}
+}

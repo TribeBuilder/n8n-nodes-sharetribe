@@ -1,0 +1,138 @@
+{
+	"id": "e2e-image-upload",
+	"name": "[E2E] Image - Upload (binary + URL)",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "image"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-image-upload",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [240, 120],
+			"parameters": {
+				"content": "## Image - Upload (binary + URL)\n\n**MUTATING** -- NOT reversible (harmless)\n\nTests uploading an image from binary data and from a URL.\n\n**Steps:**\n1. Manual trigger\n2. HTTP Request fetches a test image from picsum.photos\n3. Upload image from binary data\n4. Upload the same image again from URL (using the variant URL returned by step 3)\n\n**Expected output:** Image object with ID\n\nImages cannot be deleted via the API but are harmless.",
+				"color": 5
+			}
+		},
+		{
+			"id": "trigger-image-upload",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [240, 300],
+			"parameters": {}
+		},
+		{
+			"id": "fetch-test-image",
+			"name": "Fetch Test Image",
+			"type": "n8n-nodes-base.httpRequest",
+			"typeVersion": 4.3,
+			"position": [460, 300],
+			"parameters": {
+				"url": "https://fastly.picsum.photos/id/666/200/300.jpg",
+				"sendQuery": true,
+				"queryParameters": {
+					"parameters": [
+						{
+							"name": "hmac",
+							"value": "=FfmCCw-UuMgMhTLigoNVx2auMxtw-EtixqVwwxaefq0"
+						}
+					]
+				},
+				"options": {}
+			}
+		},
+		{
+			"id": "upload-from-binary",
+			"name": "Upload from Binary",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [680, 300],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "image",
+				"imageSource": {
+					"__rl": true,
+					"value": "data",
+					"mode": "binaryPropertyName"
+				}
+			}
+		},
+		{
+			"id": "upload-from-url",
+			"name": "Upload from URL",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [900, 300],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "image",
+				"imageSource": {
+					"__rl": true,
+					"value": "={{ $json.attributes.variants.default.url }}",
+					"mode": "imageUrl"
+				}
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Fetch Test Image",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Fetch Test Image": {
+			"main": [
+				[
+					{
+						"node": "Upload from Binary",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Upload from Binary": {
+			"main": [
+				[
+					{
+						"node": "Upload from URL",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {}
+}

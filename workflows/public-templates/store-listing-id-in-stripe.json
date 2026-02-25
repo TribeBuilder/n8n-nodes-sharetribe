@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Store Sharetribe listing ID in Stripe customer metadata\n\nAutomatically save a provider's listing ID to their Stripe customer record whenever a new listing is created. This links Sharetribe listings to Stripe customers for billing, subscription management, and analytics.\n\n### How it works\n* The Sharetribe Trigger polls for `listing/created` events with the full resource.\n* The Stripe node updates the customer's metadata with the listing ID.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Stripe credentials.\n3. Update the Stripe node to map the correct Stripe customer ID (this requires storing the Stripe customer ID in Sharetribe user metadata or looking it up by email).\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Stripe account\n* A way to map Sharetribe users to Stripe customers (e.g., email match or stored customer ID)\n\n### How to customize\n* Add a Sharetribe Get User node to fetch the provider's email, then use a Stripe Search Customer node to find the matching Stripe customer.\n* Store multiple listing IDs by appending to existing metadata.\n* Trigger a Stripe subscription update based on listing count.\n* Add Google Sheets logging for tracking.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for new listings\nPolls for `listing/created` events with the full resource to access the author ID and listing details."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Update Stripe metadata\nStores the Sharetribe listing ID in the Stripe customer's metadata. Update the customer ID mapping for your setup."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-listing",
+      "name": "New Listing Created",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "listing"
+        ],
+        "eventTypes": [
+          "listing/created"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "stripe-update",
+      "name": "Update Stripe Customer Metadata",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "url": "=https://api.stripe.com/v1/customers/{{ $json.resource.authorId }}",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "metadata[sharetribe_listing_id]",
+              "value": "={{ $json.resourceId }}"
+            }
+          ]
+        }
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe Credential"
+        }
+      },
+      "typeVersion": 4.2
+    }
+  ],
+  "connections": {
+    "New Listing Created": {
+      "main": [
+        [
+          {
+            "node": "Update Stripe Customer Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "08a4705c-7e9b-53dd-bccb-8591e59a30b6",
+  "name": "[template] Store Listing Id In Stripe"
+}
