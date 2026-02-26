@@ -7,6 +7,7 @@ import type {
 	INodeListSearchResult,
 	INode,
 	FieldType,
+	NodeExecutionHint,
 } from 'n8n-workflow';
 import { NodeOperationError, validateFieldType } from 'n8n-workflow';
 import { DateTime } from 'luxon';
@@ -2023,72 +2024,31 @@ export const metadataField: INodeProperties = {
 };
 
 /**
- * Generates a standardized execution summary message from API meta response
- * Used to provide user-facing feedback about operation results
- *
- * @param operation - The operation type (e.g., 'create', 'update', 'get', 'query')
- * @param resource - The resource type (e.g., 'listing', 'user', 'transaction')
- * @param resultCount - Number of items in the result
- * @param meta - Optional meta object from API response containing pagination info
- * @returns Human-readable summary string
+ * Builds the human-readable summary message shown in the n8n output pane after a node runs.
+ * Converts the operation + resource + result count into a natural-language sentence
+ * (e.g. "Retrieved 3 listings (page 1, 100 per page)" or "Created 1 transaction").
+ * Automatically pluralizes the resource name and appends pagination details when present.
+ * Resource and operation are read from the node parameters automatically.
  *
  * @example
- * generateExecutionSummary('create', 'listing', 1)
- * // Returns: "Created 1 listing"
- *
- * generateExecutionSummary('query', 'user', 45, { totalItems: 120, page: 1, perPage: 50 })
- * // Returns: "Retrieved 45 of 120 users (page 1, 50 per page)"
- */
-/**
- * Generates execution summary with automatic resource/operation detection from context
+ * generateExecutionSummary(this, 3, meta)
+ * // → "Retrieved 3 listings (page 1, 100 per page)"
  */
 export function generateExecutionSummary(
 	context: IExecuteFunctions,
 	resultCount: number,
 	meta?: IDataObject,
-): string;
-/**
- * Generates execution summary with explicit resource/operation (legacy)
- */
-export function generateExecutionSummary(
-	operation: string,
-	resource: string,
-	resultCount: number,
-	meta?: IDataObject,
-): string;
-export function generateExecutionSummary(
-	contextOrOperation: IExecuteFunctions | string,
-	resourceOrResultCount: string | number,
-	resultCountOrMeta?: number | IDataObject,
-	metaOrUndefined?: IDataObject,
 ): string {
-	// Determine which overload was called
-	let operation: string;
-	let resource: string;
-	let resultCount: number;
-	let meta: IDataObject | undefined;
+	const resource = context.getNodeParameter('resource', 0) as string;
+	const operation = context.getNodeParameter('operation', 0) as string;
+	const countOnly = context.getNodeParameter('countOnly', 0, false) as boolean;
 
-	if (typeof contextOrOperation === 'string') {
-		// Legacy call: (operation, resource, resultCount, meta?)
-		operation = contextOrOperation;
-		resource = resourceOrResultCount as string;
-		resultCount = resultCountOrMeta as number;
-		meta = metaOrUndefined;
-	} else {
-		// New call: (context, resultCount, meta?)
-		const context = contextOrOperation;
-		resultCount = resourceOrResultCount as number;
-		meta = resultCountOrMeta as IDataObject | undefined;
+	const resourceLabel = (n: number) => (n === 1 ? resource : `${resource}s`);
 
-		// Extract resource and operation from context
-		resource = context.getNodeParameter('resource', 0) as string;
-		operation = context.getNodeParameter('operation', 0) as string;
+	if (countOnly) {
+		return `Counted ${resultCount} ${resourceLabel(resultCount)}`;
 	}
 
-	const resourcePlural = resultCount === 1 ? resource : `${resource}s`;
-	const resourceSingular = resource;
-
-	// Operation-specific verbs
 	const verbs: Record<string, string> = {
 		create: 'Created',
 		update: 'Updated',
@@ -2110,40 +2070,33 @@ export function generateExecutionSummary(
 
 	const verb = verbs[operation] || 'Processed';
 
-	// For single item operations (get, create, update, delete, approve, etc.)
 	if (!meta || (operation !== 'query' && operation !== 'getMany')) {
-		return `${verb} ${resultCount} ${resultCount === 1 ? resourceSingular : resourcePlural}`;
+		return `${verb} ${resultCount} ${resourceLabel(resultCount)}`;
 	}
 
-	// For query operations with pagination metadata
 	const totalItems = meta.totalItems as number | null | undefined;
 	const page = meta.page as number | undefined;
 	const perPage = meta.perPage as number | undefined;
 	const totalPages = meta.totalPages as number | null | undefined;
+	// paginationUnsupported is set by the API when availability filters are active —
+	// those queries cannot return a total count.
 	const paginationUnsupported = meta.paginationUnsupported as boolean | undefined;
 
-	// paginationUnsupported: true is set by the API when the query type does not support pagination
-	// (e.g. availability-filtered listing queries). totalItems and totalPages will be null in this case.
 	if (paginationUnsupported) {
-		return `${verb} ${resultCount} ${resultCount === 1 ? resourceSingular : resourcePlural} (total unavailable — availability filters prevent count queries)`;
+		return `${verb} ${resultCount} ${resourceLabel(resultCount)} (total unavailable — availability filters prevent count queries)`;
 	}
 
 	if (totalItems != null) {
-		let summary = `${verb} ${resultCount} of ${totalItems} ${totalItems === 1 ? resourceSingular : resourcePlural}`;
-
+		let summary = `${verb} ${resultCount} of ${totalItems} ${resourceLabel(totalItems)}`;
 		if (page != null && perPage != null) {
 			summary += ` (page ${page}`;
-			if (totalPages != null) {
-				summary += ` of ${totalPages}`;
-			}
+			if (totalPages != null) summary += ` of ${totalPages}`;
 			summary += `, ${perPage} per page)`;
 		}
-
 		return summary;
 	}
 
-	// Fallback for queries without pagination metadata
-	return `${verb} ${resultCount} ${resultCount === 1 ? resourceSingular : resourcePlural}`;
+	return `${verb} ${resultCount} ${resourceLabel(resultCount)}`;
 }
 
 /**
@@ -2591,14 +2544,14 @@ export function filterEventTypesByResources(resources: string[], eventTypes: str
 }
 
 /**
- * Adds an execution hint when a single-run operation receives multiple input items.
- * Single-run operations (getMany, get, etc.) always execute once regardless of input count.
+ * Returns an execution hint for single-run operations that received multiple input items,
+ * or undefined if there is only one item. The caller is responsible for passing the result
+ * to addExecutionHints.
  */
-export function hintMultipleInputItems(context: IExecuteFunctions, itemCount: number): void {
-	if (itemCount > 1) {
-		context.addExecutionHints({
-			message: `This node received <b>${itemCount} input items</b> but only ran once — this operation always runs once regardless of input count. Enable <b>Execute Once</b> in node settings, or restructure your workflow if you need to run per input item.`,
-			location: 'outputPane',
-		});
-	}
+export function multipleInputItemsHint(itemCount: number): NodeExecutionHint | undefined {
+	if (itemCount <= 1) return undefined;
+	return {
+		message: `This node received <b>${itemCount} input items</b> but only ran once — this operation always runs once regardless of input count. Enable <b>Execute Once</b> in node settings, or restructure your workflow if you need to run per input item.`,
+		location: 'outputPane',
+	};
 }

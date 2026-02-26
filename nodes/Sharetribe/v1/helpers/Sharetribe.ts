@@ -398,7 +398,7 @@ export {
 	extractResourceMapperFields,
 	generateExecutionSummary,
 	buildOutputConfig,
-	hintMultipleInputItems,
+	multipleInputItemsHint,
 } from './Sharetribe.utils';
 
 export * from './sharedDescriptions';
