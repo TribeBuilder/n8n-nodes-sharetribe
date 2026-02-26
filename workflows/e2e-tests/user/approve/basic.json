@@ -1,0 +1,140 @@
+{
+	"id": "e2e-user-approve",
+	"name": "[E2E] User - Approve",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "user"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-user-approve",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## User - Approve\n\n⚠️ **MUTATING** — NOT self-cleaning\n\nTests approving a user in pendingApproval state.\n\n**Input:** `FIXTURE_PENDING_USER_ID` from config (optional — skipped if not set)\n\n**Steps:**\n1. Manual trigger\n2. Approve the pending user\n\n**Expected output:** User with state changed to \"active\"\n\n⚠️ Cannot undo — the pending user fixture must be recreated before re-running this test.",
+				"color": 5
+			}
+		},
+		{
+			"id": "trigger-user-approve",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-user-approve",
+			"name": "Approve User",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "user",
+				"operation": "approveUser",
+				"userId": "{{FIXTURE_PENDING_USER_ID}}"
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger starts the workflow",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-approve-user",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Approves the user, changing state from pendingApproval to active",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Approve User",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Approve User": [
+			{
+				"json": {
+					"data": {
+						"id": "f9a8b7c6-d5e4-3210-f9a8-b7c6d5e43210",
+						"type": "user",
+						"attributes": {
+							"email": "pendinguser@example.com",
+							"profile": {
+								"firstName": "Pending",
+								"lastName": "User",
+								"displayName": "Pending U",
+								"abbreviatedName": "PU",
+								"bio": null,
+								"publicData": {},
+								"protectedData": {},
+								"privateData": {},
+								"metadata": {}
+							},
+							"state": "active",
+							"createdAt": "2025-03-01T09:00:00.000Z",
+							"banned": false,
+							"deleted": false
+						}
+					}
+				}
+			}
+		]
+	}
+}

@@ -1,0 +1,175 @@
+{
+	"id": "e2e-transaction-getmany-filters",
+	"name": "[E2E] Transaction - Get Many with Filters",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "transaction"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-tx-getmany-filters",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Transaction - Get Many with Filters\n\nTests filtering transactions by sale type.\n\n**Input:** None\n\n**Steps:**\n1. Manual trigger\n2. Fetch transactions filtered by only=sale\n\n**Expected output:** Array of sale-type transactions",
+				"color": 4
+			}
+		},
+		{
+			"id": "trigger-tx-getmany-filters",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-tx-getmany-filters",
+			"name": "Get Many Transactions (Filtered)",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "transaction",
+				"operation": "getMany",
+				"returnAll": false,
+				"limit": 5,
+				"filterOptions": {
+					"filters": [
+						{
+							"filterType": "only",
+							"only": "sale"
+						}
+					]
+				}
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-query-with-filter",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Queries with sale filter",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Many Transactions (Filtered)",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Many Transactions (Filtered)": [
+			{
+				"json": {
+					"data": {
+						"id": "b1c2d3e4-f5a6-7890-b1c2-d3e4f5a67890",
+						"type": "transaction",
+						"attributes": {
+							"processName": "default-buying",
+							"processVersion": 1,
+							"createdAt": "2025-03-10T08:15:00.000Z",
+							"lastTransitionedAt": "2025-03-10T08:20:00.000Z",
+							"lastTransition": "transition/confirm-payment",
+							"payinTotal": {
+								"amount": 5000,
+								"currency": "USD"
+							},
+							"payoutTotal": {
+								"amount": 4500,
+								"currency": "USD"
+							},
+							"lineItems": [],
+							"protectedData": {},
+							"metadata": {}
+						}
+					}
+				}
+			},
+			{
+				"json": {
+					"data": {
+						"id": "d5e6f7a8-b9c0-1234-d5e6-f7a8b9c01234",
+						"type": "transaction",
+						"attributes": {
+							"processName": "default-buying",
+							"processVersion": 1,
+							"createdAt": "2025-04-01T11:00:00.000Z",
+							"lastTransitionedAt": "2025-04-01T11:10:00.000Z",
+							"lastTransition": "transition/confirm-payment",
+							"payinTotal": {
+								"amount": 7500,
+								"currency": "USD"
+							},
+							"payoutTotal": {
+								"amount": 6750,
+								"currency": "USD"
+							},
+							"lineItems": [],
+							"protectedData": {},
+							"metadata": {}
+						}
+					}
+				}
+			}
+		]
+	}
+}

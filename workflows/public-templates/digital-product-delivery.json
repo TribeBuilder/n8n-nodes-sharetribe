@@ -1,0 +1,217 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 860,
+        "content": "## Try It Out!\n### Send digital download link after Sharetribe purchase via Gmail\n\nAutomatically email a download link to buyers after their purchase payment is confirmed. Perfect for digital product marketplaces selling files, templates, courses, or software.\n\n### How it works\n* The Sharetribe Trigger polls for `transaction/transitioned` events.\n* An IF node filters for the `transition/confirm-payment` transition.\n* The Asset Get node retrieves your marketplace's email template text for download delivery.\n* Gmail sends the buyer an email with the download link.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Gmail account.\n3. Update the email body with your download link logic. The download URL could come from listing metadata, a file hosting service, or a generated link.\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Gmail account\n* Digital products with download links stored in listing metadata or external service\n\n### How to customize\n* Add a Sharetribe Get Listing node to fetch the download URL from listing publicData/metadata.\n* Add an HTTP Request node to generate time-limited download links from your file hosting (S3, Google Drive, etc.).\n* Send a separate email to the provider requesting they share files.\n* Add download tracking via Google Sheets.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for transitions\nPolls for `transaction/transitioned` events with the full resource for customer and listing details."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Filter for payment\nOnly delivers downloads after payment is confirmed, preventing premature access."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Get email text & deliver\nRetrieves marketplace email copy and sends the download email to the buyer."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "Transaction Transitioned",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/transitioned"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-payment-confirmed",
+      "name": "Payment Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.lastTransition }}",
+              "rightValue": "transition/confirm-payment",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "asset-email-texts",
+      "name": "Get Email Template Text",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "resource": "asset",
+        "operation": "get",
+        "assetCategory": "/content/email-texts.json",
+        "accessType": "alias",
+        "enableEmailTextsFilter": true,
+        "emailTextsCustomFilter": "download,delivery"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "gmail-send",
+      "name": "Send Download Link",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1080,
+        200
+      ],
+      "parameters": {
+        "sendTo": "=buyer@example.com",
+        "subject": "=Your purchase is ready \u2014 download your files",
+        "emailType": "text",
+        "message": "=Thank you for your purchase!\n\nTransaction ID: {{ $('Transaction Transitioned').item.json.resourceId }}\n\nYou can download your files using the link below:\n\n[Replace this with your download URL \u2014 e.g., from listing publicData or a file hosting service]\n\nIf you have any issues accessing your download, please contact us.\n\nBest regards,\nThe Marketplace Team"
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "credential-id",
+          "name": "Gmail Credential"
+        }
+      },
+      "typeVersion": 2.1
+    }
+  ],
+  "connections": {
+    "Transaction Transitioned": {
+      "main": [
+        [
+          {
+            "node": "Payment Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Get Email Template Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Email Template Text": {
+      "main": [
+        [
+          {
+            "node": "Send Download Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "a2ca7345-6469-5235-bb35-167fa87c5a1b",
+  "name": "[template] Digital Product Delivery"
+}

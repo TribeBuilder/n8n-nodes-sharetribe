@@ -1,0 +1,140 @@
+{
+	"id": "e2e-transaction-get",
+	"name": "[E2E] Transaction - Get",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "transaction"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-tx-get",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Transaction - Get\n\nTests fetching a single transaction by ID.\n\n**Input:** `FIXTURE_TRANSACTION_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Fetch transaction by ID\n\n**Expected output:** Transaction object with state, lastTransition, processName",
+				"color": 4
+			}
+		},
+		{
+			"id": "trigger-tx-get",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-tx-get",
+			"name": "Get Transaction",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "transaction",
+				"operation": "get",
+				"transactionId": "{{FIXTURE_TRANSACTION_ID}}"
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-transaction",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Fetches transaction by ID",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Transaction",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Transaction": [
+			{
+				"json": {
+					"data": {
+						"id": "b1c2d3e4-f5a6-7890-b1c2-d3e4f5a67890",
+						"type": "transaction",
+						"attributes": {
+							"processName": "default-buying",
+							"processVersion": 1,
+							"createdAt": "2025-03-10T08:15:00.000Z",
+							"lastTransitionedAt": "2025-03-10T08:20:00.000Z",
+							"lastTransition": "transition/confirm-payment",
+							"payinTotal": {
+								"amount": 5000,
+								"currency": "USD"
+							},
+							"payoutTotal": {
+								"amount": 4500,
+								"currency": "USD"
+							},
+							"lineItems": [],
+							"protectedData": {},
+							"metadata": {}
+						}
+					}
+				}
+			}
+		]
+	}
+}

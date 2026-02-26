@@ -1,0 +1,177 @@
+{
+	"id": "e2e-stock-adjust-quantity",
+	"name": "[E2E] Stock - Adjust Quantity",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "stock"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-stock-adjust",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Stock - Adjust Quantity\n\n⚠️ **MUTATING** — Self-cleaning\n\nTests adjusting stock quantity up then down.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Increase stock by +1\n3. Decrease stock by -1 (net zero change)\n\n**Expected output:** Stock adjustment showing -1",
+				"color": 5
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-increase-stock",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Adjusts stock +1",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-decrease-stock",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Adjusts stock -1 to restore",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-stock-adjust",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-stock-adjust-up",
+			"name": "Increase Stock",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "stock",
+				"operation": "updateStockQuantity",
+				"mode": "adjustQuantity",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"quantity": 1
+			}
+		},
+		{
+			"id": "sharetribe-stock-adjust-down",
+			"name": "Decrease Stock",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "stock",
+				"operation": "updateStockQuantity",
+				"mode": "adjustQuantity",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"quantity": -1
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Increase Stock",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Increase Stock": {
+			"main": [
+				[
+					{
+						"node": "Decrease Stock",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Decrease Stock": [
+			{
+				"json": {
+					"data": {
+						"id": "f6a7b8c9-d0e1-2345-f6a7-b8c9d0e12345",
+						"type": "stockAdjustment",
+						"attributes": {
+							"at": "2024-09-05T16:20:00.000Z",
+							"quantity": -1
+						}
+					}
+				}
+			}
+		]
+	}
+}

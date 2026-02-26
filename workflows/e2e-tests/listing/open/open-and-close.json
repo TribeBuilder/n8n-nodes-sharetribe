@@ -1,0 +1,177 @@
+{
+	"id": "e2e-listing-open",
+	"name": "[E2E] Listing - Open and Close",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "listing"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-listing-open-close",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Listing - Open and Close\n\n⚠️ **MUTATING** — Leaves listing in closed state\n\nTests opening a closed listing, then closing it again.\n\n**Input:** `FIXTURE_CLOSED_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Open the closed listing\n3. Close it again\n\n**Expected output:** Listing in closed state",
+				"color": 5
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-open-listing",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Opens the closed fixture listing",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-close-listing",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Closes the listing back to its original state",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-listing-open-close",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-listing-open",
+			"name": "Open Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "open",
+				"listingId": "{{FIXTURE_CLOSED_LISTING_ID}}"
+			}
+		},
+		{
+			"id": "sharetribe-listing-close-after-open",
+			"name": "Close Listing",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "close",
+				"listingId": "={{ $json.id }}"
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Open Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Open Listing": {
+			"main": [
+				[
+					{
+						"node": "Close Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Close Listing": [
+			{
+				"json": {
+					"data": {
+						"id": "d4e5f6a7-b8c9-0123-d4e5-f6a7b8c90123",
+						"type": "listing",
+						"attributes": {
+							"title": "E2E Test Listing",
+							"description": "Temporary listing created by E2E test runner. Will be closed after test.",
+							"state": "closed",
+							"price": null,
+							"publicData": {},
+							"createdAt": "2025-03-12T08:00:00.000Z"
+						}
+					}
+				}
+			}
+		]
+	}
+}

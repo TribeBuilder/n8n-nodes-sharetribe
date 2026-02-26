@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Auto-approve Sharetribe users based on user type\n\nAutomatically approve users of a specific type (e.g., buyers) while requiring manual approval for others (e.g., providers). This streamlines onboarding for low-risk user types while maintaining quality control.\n\n### How it works\n* The Sharetribe Trigger polls for `user/created` events with the full user resource.\n* An IF node checks the user's type from their publicData (set during registration).\n* If the user type matches, the Sharetribe Approve User action sets their state to active.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Enable \"Require user approval\" in Console > Build > General.\n3. Update the IF node's comparison value to match your target user type ID from Console > Build > Users > User types.\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* User approval enabled in marketplace settings\n* User types configured in Console\n\n### How to customize\n* Add multiple IF conditions to approve several user types.\n* Add a Gmail node to notify approved users.\n* Chain with an Update Permissions node to grant specific rights based on user type.\n* Add the false branch to send a \"pending review\" notification.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for new users\nPolls for `user/created` events with the full resource to access the user's publicData including their user type."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Check user type\nCompares the user's publicData.userType against the target type ID. Update the value to match your user type from Console > Build > Users > User types."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Approve the user\nSets the user's state from `pendingApproval` to `active`, granting them full marketplace access."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-new-user",
+      "name": "New User Signup",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "user"
+        ],
+        "eventTypes": [
+          "user/created"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-user-type",
+      "name": "Is Target User Type?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.profile.publicData.userType }}",
+              "rightValue": "buyer",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sharetribe-approve",
+      "name": "Approve User",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "approve",
+        "userId": "={{ $('New User Signup').item.json.resourceId }}"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "New User Signup": {
+      "main": [
+        [
+          {
+            "node": "Is Target User Type?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Target User Type?": {
+      "main": [
+        [
+          {
+            "node": "Approve User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "cd071024-7099-5912-bd0f-6a0e0c41e240",
+  "name": "[template] Auto Approve Users By Type"
+}

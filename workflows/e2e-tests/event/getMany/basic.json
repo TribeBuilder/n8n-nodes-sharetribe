@@ -1,0 +1,147 @@
+{
+	"id": "e2e-event-getmany",
+	"name": "[E2E] Event - Get Many",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "event"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-event-getmany",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Event - Get Many\n\nTests polling for marketplace events.\n\n**Input:** None (queries all resource types)\n\n**Steps:**\n1. Manual trigger\n2. Fetch recent events across all resource types\n\n**Expected output:** Array of event objects with eventType, resourceType, sequenceId",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-events",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Polls for recent events (all types)",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-event-getmany",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-event-getmany",
+			"name": "Get Events",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "event",
+				"operation": "getMany",
+				"resources": [
+					"all"
+				],
+				"eventTypes": [
+					""
+				],
+				"returnAll": false,
+				"limit": 5
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Events",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Events": [
+			{
+				"json": {
+					"id": "evt-a1b2c3d4-0001",
+					"type": "event",
+					"attributes": {
+						"eventType": "listing/created",
+						"resourceType": "listing",
+						"resourceId": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+						"createdAt": "2025-06-15T10:30:00.000Z",
+						"sequenceId": 1001
+					}
+				}
+			},
+			{
+				"json": {
+					"id": "evt-a1b2c3d4-0002",
+					"type": "event",
+					"attributes": {
+						"eventType": "user/updated",
+						"resourceType": "user",
+						"resourceId": "d1e2f3a4-b5c6-7890-d1e2-f3a4b5c67890",
+						"createdAt": "2025-06-15T11:45:00.000Z",
+						"sequenceId": 1002
+					}
+				}
+			}
+		]
+	}
+}

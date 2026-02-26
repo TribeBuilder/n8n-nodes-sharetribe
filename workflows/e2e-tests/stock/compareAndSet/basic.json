@@ -1,0 +1,179 @@
+{
+	"id": "e2e-stock-compare-and-set",
+	"name": "[E2E] Stock - Compare and Set",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "stock"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-stock-compareset",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Stock - Compare and Set\n\n⚠️ **MUTATING** — Self-cleaning\n\nTests atomic compare-and-set stock operation.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Adjust stock +1 (to learn current total)\n3. Compare-and-set back to original (oldTotal → oldTotal-1)\n\n**Expected output:** Stock restored to original quantity",
+				"color": 5
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-adjust-plus",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Adjusts +1 and captures totalItems in output",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-compare-set",
+			"name": "Step 3",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				680,
+				460
+			],
+			"parameters": {
+				"content": "**Step 3:** Uses compareAndSet to atomically restore original stock",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-stock-compareset",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-stock-adjust-plus",
+			"name": "Adjust +1",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "stock",
+				"operation": "updateStockQuantity",
+				"mode": "adjustQuantity",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"quantity": 1
+			}
+		},
+		{
+			"id": "sharetribe-stock-compare-set",
+			"name": "Compare and Set",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				680,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "stock",
+				"operation": "updateStockQuantity",
+				"mode": "compareAndSet",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"oldTotal": "={{ $json.listing.currentStock.quantity }}",
+				"newTotal": "={{ $json.listing.currentStock.quantity - 1 }}",
+				"hasNoStockDefined": true
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Adjust +1",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Adjust +1": {
+			"main": [
+				[
+					{
+						"node": "Compare and Set",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Compare and Set": [
+			{
+				"json": {
+					"data": {
+						"id": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67890",
+						"type": "stock",
+						"attributes": {
+							"quantity": 10,
+							"createdAt": "2024-09-05T16:25:00.000Z"
+						}
+					}
+				}
+			}
+		]
+	}
+}

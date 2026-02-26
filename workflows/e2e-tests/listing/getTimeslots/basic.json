@@ -1,0 +1,140 @@
+{
+	"id": "e2e-listing-gettimeslots",
+	"name": "[E2E] Listing - Get Timeslots",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "listing"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-listing-gettimeslots",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## Listing - Get Timeslots\n\nTests fetching available booking timeslots for a listing.\n\n**Input:** `FIXTURE_LISTING_ID` from config\n\n**Steps:**\n1. Manual trigger\n2. Fetch timeslots for the next 30 days\n\n**Expected output:** Array of timeslot objects with start, end, seats\n\nThe fixture listing must have an availability plan configured.",
+				"color": 4
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-timeslots",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Queries timeslots for the fixture listing (next 30 days)",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "trigger-listing-gettimeslots",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-listing-gettimeslots",
+			"name": "Get Timeslots",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "listing",
+				"operation": "getTimeslots",
+				"listingId": "{{FIXTURE_LISTING_ID}}",
+				"start": "={{ $now.toISO() }}",
+				"end": "={{ $now.plus({days: 30}).toISO() }}",
+				"returnAll": false,
+				"limit": 10
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Timeslots",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Timeslots": [
+			{
+				"json": {
+					"id": "ts-a1b2c3d4-0001",
+					"type": "timeSlot",
+					"attributes": {
+						"start": "2025-01-06T00:00:00.000Z",
+						"end": "2025-01-07T00:00:00.000Z",
+						"seats": 1
+					}
+				}
+			},
+			{
+				"json": {
+					"id": "ts-a1b2c3d4-0002",
+					"type": "timeSlot",
+					"attributes": {
+						"start": "2025-01-13T00:00:00.000Z",
+						"end": "2025-01-14T00:00:00.000Z",
+						"seats": 1
+					}
+				}
+			}
+		]
+	}
+}

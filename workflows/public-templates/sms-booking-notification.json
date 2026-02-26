@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 780,
+        "content": "## Try It Out!\n### Send SMS booking notifications from Sharetribe via Twilio\n\nSend instant SMS notifications when a booking is confirmed on your marketplace. SMS ensures providers never miss a booking, even when they're away from email.\n\n### How it works\n* The Sharetribe Trigger polls for `transaction/transitioned` events.\n* An IF node filters for the accept/confirm transition that indicates a booking is confirmed.\n* Twilio sends an SMS to the provider's phone number with booking details.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your Twilio account (Account SID and Auth Token).\n3. Set the \"From\" number in the Twilio node to your Twilio phone number.\n4. Update the transition name to match your booking confirmation transition.\n5. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Twilio account with an SMS-capable phone number\n\n### How to customize\n* Add a Sharetribe Get User node to fetch the provider's phone number dynamically.\n* Change the transition filter for different booking states.\n* Modify the SMS message content.\n* Add a second Twilio node to also notify the customer.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for transitions\nPolls for `transaction/transitioned` events to catch booking confirmations."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Filter for booking confirmation\nOnly continues when the transition indicates a booking has been accepted or confirmed."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Send SMS notification\nSends an SMS via Twilio to the provider. Update the phone number to come from the provider's profile or a Set node."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "Transaction Transitioned",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/transitioned"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-booking-confirmed",
+      "name": "Booking Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.lastTransition }}",
+              "rightValue": "accept",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "twilio-sms",
+      "name": "Send SMS to Provider",
+      "type": "n8n-nodes-base.twilio",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "from": "+1234567890",
+        "to": "+0987654321",
+        "message": "=New booking confirmed!\n\nTransaction ID: {{ $('Transaction Transitioned').item.json.resourceId }}\nDate: {{ $('Transaction Transitioned').item.json.createdAt }}\n\nLog in to your marketplace account to view the booking details."
+      },
+      "credentials": {
+        "twilioApi": {
+          "id": "credential-id",
+          "name": "Twilio Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Transaction Transitioned": {
+      "main": [
+        [
+          {
+            "node": "Booking Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Send SMS to Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "118587d7-09ef-5d6c-8223-627e98cfe518",
+  "name": "[template] Sms Booking Notification"
+}

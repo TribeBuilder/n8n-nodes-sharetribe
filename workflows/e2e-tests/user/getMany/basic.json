@@ -1,0 +1,167 @@
+{
+	"id": "e2e-user-getmany",
+	"name": "[E2E] User - Get Many",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "user"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-user-getmany",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## User - Get Many\n\nTests fetching multiple users with a limit.\n\n**Input:** None (queries all users)\n\n**Steps:**\n1. Manual trigger\n2. Fetch up to 3 users\n\n**Expected output:** Array of user objects",
+				"color": 4
+			}
+		},
+		{
+			"id": "trigger-user-getmany",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-user-getmany",
+			"name": "Get Many Users",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "user",
+				"operation": "getMany",
+				"returnAll": false,
+				"limit": 3
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger starts the workflow",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-get-many-users",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Queries users with limit=3",
+				"width": 220,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Get Many Users",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"Get Many Users": [
+			{
+				"json": {
+					"data": {
+						"id": "d1e2f3a4-b5c6-7890-d1e2-f3a4b5c67890",
+						"type": "user",
+						"attributes": {
+							"email": "testuser@example.com",
+							"profile": {
+								"firstName": "Test",
+								"lastName": "User",
+								"displayName": "Test U",
+								"abbreviatedName": "TU",
+								"bio": null,
+								"publicData": {},
+								"protectedData": {},
+								"privateData": {},
+								"metadata": {}
+							},
+							"state": "active",
+							"createdAt": "2025-01-15T10:30:00.000Z",
+							"banned": false,
+							"deleted": false
+						}
+					}
+				}
+			},
+			{
+				"json": {
+					"data": {
+						"id": "a7b8c9d0-e1f2-3456-a7b8-c9d0e1f23456",
+						"type": "user",
+						"attributes": {
+							"email": "anotheruser@example.com",
+							"profile": {
+								"firstName": "Another",
+								"lastName": "User",
+								"displayName": "Another U",
+								"abbreviatedName": "AU",
+								"bio": "A second test user.",
+								"publicData": {},
+								"protectedData": {},
+								"privateData": {},
+								"metadata": {}
+							},
+							"state": "active",
+							"createdAt": "2025-02-20T14:00:00.000Z",
+							"banned": false,
+							"deleted": false
+						}
+					}
+				}
+			}
+		]
+	}
+}

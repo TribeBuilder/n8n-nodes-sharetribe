@@ -1,0 +1,36 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "nodes/**/*.node.ts!",
+    "credentials/**/*.credentials.ts!",
+    "nodes/**/descriptions.ts!",
+    "nodes/**/description.ts!",
+    "nodes/**/index.ts!",
+    "scripts/**/*.ts",
+    "nodes/Sharetribe/v1/helpers/Sharetribe.types.ts!"
+  ],
+  "project": [
+    "nodes/**/*.ts",
+    "credentials/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "ignore": [
+    "dist/**",
+    "coverage/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "nodes/**/test/**"
+  ],
+  "ignoreDependencies": [
+    "release-it"
+  ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "jest": {
+    "entry": [
+      "**/*.test.ts"
+    ]
+  }
+}

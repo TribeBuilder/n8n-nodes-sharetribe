@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 860,
+        "content": "## Try It Out!\n### Grant Sharetribe user permissions after Stripe payment\n\nAutomatically grant marketplace permissions (transaction rights, posting rights) when a user completes a Stripe payment. Supports lead fee, subscription, and one-time payment models.\n\n### How it works\n* The Stripe Trigger fires when a checkout session is completed.\n* The Sharetribe Update Permissions action grants the specified permissions to the user identified by the `client_reference_id` from Stripe.\n\n### How to set up\n1. Connect your Stripe credentials.\n2. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n3. Set up a Stripe Checkout page for your fee (lead fee, subscription, etc.).\n4. **Critical**: Pass the Sharetribe User ID as `client_reference_id` in your Stripe Checkout session.\n5. Enable \"Restrict transaction rights\" or \"Restrict posting rights\" in Sharetribe Console > Build > General.\n6. Configure which permissions to grant in the Update Permissions node.\n7. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials and permission restrictions enabled\n* Stripe account with payment product configured\n* Your frontend must pass User ID as `client_reference_id` to Stripe Checkout\n\n### How to customize\n* Adjust the three permission flags to match your business model.\n* Pair with \"Revoke transaction rights after transaction\" for a pay-per-lead model.\n* Add a Gmail notification to confirm the permission grant.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Stripe payment completed\nFires when a customer completes checkout. The `client_reference_id` contains the Sharetribe User ID."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Grant permissions\nUpdates the user's marketplace permissions. Configure which rights to enable: create listings, initiate transactions, and/or read data."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "stripe-trigger",
+      "name": "Stripe Payment Completed",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "events": [
+          "checkout.session.completed"
+        ]
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sharetribe-permissions",
+      "name": "Grant User Permissions",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "updatePermissions",
+        "userId": "={{ $json.data.object.client_reference_id }}",
+        "canCreateListings": true,
+        "canInitiateTransactions": true,
+        "canRead": true
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Stripe Payment Completed": {
+      "main": [
+        [
+          {
+            "node": "Grant User Permissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "93e26e41-de6b-58f7-81d2-48759c23e8da",
+  "name": "[template] Grant Permissions After Stripe Payment"
+}

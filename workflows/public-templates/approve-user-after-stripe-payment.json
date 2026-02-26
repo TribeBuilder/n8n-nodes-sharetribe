@@ -1,0 +1,112 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 860,
+        "content": "## Try It Out!\n### Approve Sharetribe user after Stripe membership payment\n\nAutomatically approve marketplace users after they pay a membership fee via Stripe. This enables a paid membership model where users must pay before gaining access to the marketplace.\n\n### How it works\n* The Stripe Trigger fires when a checkout session is completed.\n* The Sharetribe Approve User action uses the `client_reference_id` from Stripe (which should contain the Sharetribe User ID) to approve the user.\n\n### How to set up\n1. Connect your Stripe credentials.\n2. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n3. Set up a Stripe Checkout page for membership fees.\n4. **Critical**: Pass the Sharetribe User ID as the `client_reference_id` parameter in your Stripe Checkout session. This links the payment to the correct user.\n5. Enable \"Require user approval\" in Sharetribe Console > Build > General.\n6. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials and user approval enabled\n* Stripe account with a membership fee product/checkout configured\n* Your frontend must pass User ID as `client_reference_id` to Stripe Checkout\n\n### How to customize\n* Add a Gmail node to send a welcome email after approval.\n* Chain with Update Permissions to grant specific rights.\n* Add error handling for cases where the user is already approved.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Stripe payment completed\nThe Stripe Trigger fires when a customer completes a checkout session. The `client_reference_id` field carries the Sharetribe User ID."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Approve Sharetribe user\nUses the User ID from Stripe's client_reference_id to approve the user in Sharetribe, changing their state from `pendingApproval` to `active`."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "stripe-trigger",
+      "name": "Stripe Payment Completed",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "events": [
+          "checkout.session.completed"
+        ]
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sharetribe-approve",
+      "name": "Approve Sharetribe User",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "approve",
+        "userId": "={{ $json.data.object.client_reference_id }}"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Stripe Payment Completed": {
+      "main": [
+        [
+          {
+            "node": "Approve Sharetribe User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "ef2cf1a1-470d-5669-9556-a7e7f16c0c60",
+  "name": "[template] Approve User After Stripe Payment"
+}

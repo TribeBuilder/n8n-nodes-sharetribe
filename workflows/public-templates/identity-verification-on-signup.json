@@ -1,0 +1,300 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 960,
+        "content": "## Try It Out!\n### Verify Sharetribe user identity on signup via HTTP webhook\n\nInitiate identity verification (selfie + government ID) when a new user signs up, then automatically grant marketplace permissions when verification is complete. This workflow is service-agnostic and works with any verification provider that supports webhooks.\n\n### How it works\n**Part 1 \u2014 Initiate verification:**\n* The Sharetribe Trigger polls for `user/created` events.\n* An HTTP Request node calls your identity verification provider's API to create a verification session.\n\n**Part 2 \u2014 Handle verification result:**\n* A Webhook node receives the callback from your verification provider.\n* An IF node checks whether the verification was successful.\n* If verified, the Sharetribe Update Permissions action grants the user full access.\n\n### How to set up\n1. Connect your Sharetribe credentials.\n2. Replace the HTTP Request URL and headers with your verification provider's API endpoint (e.g., Veriff, Sumsub, Onfido, iDenfy).\n3. Configure the Webhook URL in your verification provider's dashboard to point to this n8n webhook.\n4. Update the IF node conditions to match your provider's success response format.\n5. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Identity verification service account (Veriff, Sumsub, Onfido, iDenfy, or similar)\n* Webhook URL accessible from the internet\n\n### How to customize\n* Add a Gmail node to notify users when verification starts and completes.\n* Store verification status in Sharetribe user metadata.\n* Add retry logic for failed verifications.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-part1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 600,
+        "height": 100,
+        "content": "## Part 1: Initiate Verification on User Signup"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 1a. New user signup\nPolls for `user/created` events with the user's email and profile for the verification request."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        60
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 1b. Create verification session\nCalls your verification provider's API. Replace the URL, headers, and body with your provider's specifics."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-part2",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        380
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 920,
+        "height": 100,
+        "content": "## Part 2: Handle Verification Result (separate trigger \u2014 runs independently)"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        500
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 2a. Receive webhook\nYour verification provider sends a callback to this webhook URL when verification completes."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step4",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        500
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 2b. Check result\nVerifies the callback indicates successful ID verification. Update the condition for your provider's response format."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step5",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        500
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 240,
+        "content": "## 2c. Grant access\nGrants full marketplace permissions to the verified user."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-new-user",
+      "name": "New User Signup",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        240
+      ],
+      "parameters": {
+        "resources": [
+          "user"
+        ],
+        "eventTypes": [
+          "user/created"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "http-create-verification",
+      "name": "Create Verification Session",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        440,
+        240
+      ],
+      "parameters": {
+        "url": "https://api.your-verification-provider.com/v1/verifications",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"person\": {\n    \"firstName\": \"{{ $json.resource.profile.firstName }}\",\n    \"lastName\": \"{{ $json.resource.profile.lastName }}\",\n    \"email\": \"{{ $json.resource.email }}\"\n  },\n  \"vendorData\": \"{{ $json.resourceId }}\",\n  \"callbackUrl\": \"https://your-n8n-instance.com/webhook/verification-callback\"\n}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "credential-id",
+          "name": "Verification API Key"
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "webhook-callback",
+      "name": "Verification Callback",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        120,
+        680
+      ],
+      "webhookId": "verification-callback",
+      "parameters": {
+        "path": "verification-callback",
+        "httpMethod": "POST"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "if-verified",
+      "name": "Verification Successful?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        680
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.status }}",
+              "rightValue": "approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sharetribe-permissions",
+      "name": "Grant User Permissions",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        680
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "updatePermissions",
+        "userId": "={{ $json.body.vendorData }}",
+        "canCreateListings": true,
+        "canInitiateTransactions": true,
+        "canRead": true
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "New User Signup": {
+      "main": [
+        [
+          {
+            "node": "Create Verification Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification Callback": {
+      "main": [
+        [
+          {
+            "node": "Verification Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification Successful?": {
+      "main": [
+        [
+          {
+            "node": "Grant User Permissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "21531410-91a6-5546-a275-8e2633206ac0",
+  "name": "[template] Identity Verification On Signup"
+}

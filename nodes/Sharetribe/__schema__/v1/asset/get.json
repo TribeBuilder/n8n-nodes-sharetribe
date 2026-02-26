@@ -1,0 +1,16 @@
+{
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string"
+		},
+		"type": {
+			"type": "string",
+			"const": "asset"
+		},
+		"data": {
+			"type": "object"
+		}
+	},
+	"version": 1
+}

@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 900,
+        "content": "## Try It Out!\n### Revoke Sharetribe user access on Stripe subscription cancellation\n\nAutomatically revoke all marketplace permissions and close active listings when a user's Stripe subscription is cancelled. This enforces subscription-based access to your marketplace.\n\n### How it works\n* The Stripe Trigger fires when a subscription is deleted/cancelled.\n* The Sharetribe Update Permissions action revokes all permissions for the user.\n* The Get Many Listings action fetches all active listings by the user.\n* The Close Listing action closes each of the user's listings.\n\n### How to set up\n1. Connect your Stripe credentials.\n2. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n3. **Critical**: Your Stripe customer records must include the Sharetribe User ID in metadata (e.g., `metadata.sharetribe_user_id`).\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Stripe account with subscription products\n* Stripe customer metadata must include Sharetribe User ID\n\n### How to customize\n* Add a grace period with a Wait node before revoking access.\n* Send the user a \"subscription expired\" email with re-subscribe instructions.\n* Only close listings instead of revoking all permissions for a softer approach.\n* Add a Sharetribe Get User step to verify the user exists before revoking.\n* Pair with \"Grant permissions after Stripe payment\" to complete the subscription lifecycle.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Subscription cancelled\nThe Stripe Trigger fires when a subscription is deleted. The customer's metadata should contain the Sharetribe User ID."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Revoke all permissions\nSets all marketplace permissions to false: no listing creation, no transactions, no data access."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Close active listings\nFetches all the user's active listings and closes each one so they're no longer discoverable."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "stripe-trigger",
+      "name": "Subscription Cancelled",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "events": [
+          "customer.subscription.deleted"
+        ]
+      },
+      "credentials": {
+        "stripeApi": {
+          "id": "credential-id",
+          "name": "Stripe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sharetribe-revoke",
+      "name": "Revoke All Permissions",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "updatePermissions",
+        "userId": "={{ $json.data.object.metadata.sharetribe_user_id }}",
+        "canCreateListings": false,
+        "canInitiateTransactions": false,
+        "canRead": false
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sharetribe-get-listings",
+      "name": "Get User Listings",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "resource": "listing",
+        "operation": "getMany",
+        "returnAll": true,
+        "filters": {
+          "authorId": "={{ $('Subscription Cancelled').item.json.data.object.metadata.sharetribe_user_id }}",
+          "states": [
+            "published"
+          ]
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sharetribe-close-listing",
+      "name": "Close Each Listing",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        1080,
+        200
+      ],
+      "parameters": {
+        "resource": "listing",
+        "operation": "close",
+        "listingId": "={{ $json.id }}"
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Subscription Cancelled": {
+      "main": [
+        [
+          {
+            "node": "Revoke All Permissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revoke All Permissions": {
+      "main": [
+        [
+          {
+            "node": "Get User Listings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Listings": {
+      "main": [
+        [
+          {
+            "node": "Close Each Listing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "33e72b7b-40af-525a-b66b-018b84765c87",
+  "name": "[template] Revoke Access On Subscription Cancel"
+}

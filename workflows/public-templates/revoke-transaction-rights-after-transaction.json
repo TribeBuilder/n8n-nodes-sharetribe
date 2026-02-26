@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  },
+  "nodes": [
+    {
+      "id": "sticky-description",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -480,
+        -220
+      ],
+      "parameters": {
+        "width": 480,
+        "height": 820,
+        "content": "## Try It Out!\n### Revoke Sharetribe transaction rights after completed transaction\n\nImplement a pay-per-lead or pay-per-use model by automatically revoking a user's ability to initiate transactions after they complete one. Users must pay again to regain access.\n\n### How it works\n* The Sharetribe Trigger polls for `transaction/transitioned` events.\n* An IF node filters for the `transition/confirm-payment` transition.\n* The Update Permissions action removes the user's transaction initiation rights.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Enable \"Restrict transaction rights\" in Console > Build > General.\n3. Update the transition name if your process uses a different confirmation transition.\n4. Activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* Transaction rights restriction enabled in marketplace settings\n\n### How to customize\n* Pair with the \"Grant permissions after Stripe payment\" workflow to create a complete pay-per-lead cycle.\n* Add a counter using extended data to allow N transactions before revoking.\n* Add a Gmail notification to inform the user their rights have been used.\n* Filter by transaction process name to only apply to specific listing types.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/)."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step1",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 1. Listen for transitions\nPolls for `transaction/transitioned` events including the full resource to identify the customer."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step2",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 2. Filter for payment\nOnly continues when payment is confirmed, indicating the transaction is complete."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "sticky-step3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -20
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 280,
+        "height": 280,
+        "content": "## 3. Revoke transaction rights\nRemoves the customer's ability to initiate new transactions. They keep listing and read permissions."
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "trigger-transaction",
+      "name": "Transaction Transitioned",
+      "type": "CUSTOM.sharetribeTrigger",
+      "position": [
+        120,
+        200
+      ],
+      "parameters": {
+        "resources": [
+          "transaction"
+        ],
+        "eventTypes": [
+          "transaction/transitioned"
+        ],
+        "options": {
+          "outputFields": {
+            "eventAttributes": [
+              "createdAt",
+              "eventType",
+              "resourceId",
+              "resource"
+            ]
+          }
+        }
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "if-payment-confirmed",
+      "name": "Payment Confirmed?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.resource.lastTransition }}",
+              "rightValue": "transition/confirm-payment",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "sharetribe-revoke",
+      "name": "Revoke Transaction Rights",
+      "type": "CUSTOM.sharetribe",
+      "position": [
+        760,
+        200
+      ],
+      "parameters": {
+        "resource": "user",
+        "operation": "updatePermissions",
+        "userId": "={{ $('Transaction Transitioned').item.json.resource.customerId }}",
+        "canCreateListings": true,
+        "canInitiateTransactions": false,
+        "canRead": true
+      },
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      },
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Transaction Transitioned": {
+      "main": [
+        [
+          {
+            "node": "Payment Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Confirmed?": {
+      "main": [
+        [
+          {
+            "node": "Revoke Transaction Rights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "id": "03b70369-1f4f-5181-b279-23a04173bb04",
+  "name": "[template] Revoke Transaction Rights After Transaction"
+}
