@@ -357,4 +357,79 @@ describe('event/getMany', () => {
 		expect(result[0][0]).toHaveProperty('type');
 		expect(result[0][0]).toHaveProperty('attributes');
 	});
+
+	describe('item linking', () => {
+		it('should make one API request per input item', async () => {
+			const mockExecuteFunction = createMockExecuteFunction(defaultParameters);
+			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
+
+			const result = await executeModule.execute.call(mockExecuteFunction);
+
+			expect(apiRequestSpy).toHaveBeenCalledTimes(2);
+			expect(result[0]).toHaveLength(2);
+		});
+
+		it('should set pairedItem correctly for each input item', async () => {
+			const mockExecuteFunction = createMockExecuteFunction(defaultParameters);
+			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
+
+			apiRequestSpy
+				.mockResolvedValueOnce({
+					data: [
+						{
+							id: 'e-1',
+							type: 'event',
+							attributes: {
+								sequenceId: 1,
+								eventType: 'listing/created',
+								resourceId: 'r-1',
+								resourceType: 'listing',
+								createdAt: '2024-01-01T00:00:00.000Z',
+							},
+						},
+					],
+				})
+				.mockResolvedValueOnce({
+					data: [
+						{
+							id: 'e-2',
+							type: 'event',
+							attributes: {
+								sequenceId: 2,
+								eventType: 'listing/created',
+								resourceId: 'r-2',
+								resourceType: 'listing',
+								createdAt: '2024-01-01T00:00:00.000Z',
+							},
+						},
+					],
+				});
+
+			const result = await executeModule.execute.call(mockExecuteFunction);
+
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][0] as any).pairedItem).toEqual({ item: 0 });
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][1] as any).pairedItem).toEqual({ item: 1 });
+		});
+
+		it('should handle continueOnFail per item', async () => {
+			const mockExecuteFunction = createMockExecuteFunction(defaultParameters);
+			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
+			(mockExecuteFunction.continueOnFail as jest.Mock).mockReturnValue(true);
+
+			// First item fails, second uses the default mock from beforeEach
+			apiRequestSpy.mockRejectedValueOnce(new Error('API error'));
+
+			const result = await executeModule.execute.call(mockExecuteFunction);
+
+			expect(result[0]).toHaveLength(2);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][0] as any).json.error).toBe('API error');
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][0] as any).pairedItem).toEqual({ item: 0 });
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][1] as any).pairedItem).toEqual({ item: 1 });
+		});
+	});
 });

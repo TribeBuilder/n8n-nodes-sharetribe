@@ -606,4 +606,105 @@ describe('listing/getTimeslots', () => {
 				.not.toThrow();
 		});
 	});
+
+	describe('item linking', () => {
+		const singleSlotResponse = {
+			data: [
+				{
+					id: 'ts-1',
+					type: 'timeSlot',
+					attributes: { start: '2024-01-01T09:00:00.000Z', end: '2024-01-01T10:00:00.000Z', seats: 1 },
+				},
+			],
+			meta: { page: 1, perPage: 50, totalItems: 1, totalPages: 1 },
+		};
+
+		it('should make one timeslot request per input item', async () => {
+			const mockExecuteFunction = createMockExecuteFunction({
+				listingId: '550e8400-e29b-41d4-a716-446655440000',
+				start: '2024-01-01T00:00:00.000Z',
+				end: '2024-01-02T00:00:00.000Z',
+				returnAll: false,
+				limit: 50,
+				options: {},
+			});
+			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
+
+			const timeslotRequestMock = jest
+				.spyOn(TransportModule, 'timeslotRequest')
+				.mockResolvedValue(
+					singleSlotResponse as unknown as Awaited<
+						ReturnType<typeof TransportModule.timeslotRequest>
+					>,
+				);
+
+			const result = await executeModule.execute.call(mockExecuteFunction);
+
+			expect(timeslotRequestMock).toHaveBeenCalledTimes(2);
+			expect(result[0]).toHaveLength(2);
+		});
+
+		it('should set pairedItem correctly for each input item', async () => {
+			const mockExecuteFunction = createMockExecuteFunction({
+				listingId: '550e8400-e29b-41d4-a716-446655440000',
+				start: '2024-01-01T00:00:00.000Z',
+				end: '2024-01-02T00:00:00.000Z',
+				returnAll: false,
+				limit: 50,
+				options: {},
+			});
+			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
+
+			const slot1 = { ...singleSlotResponse, data: [{ ...singleSlotResponse.data[0], id: 'ts-item-0' }] };
+			const slot2 = { ...singleSlotResponse, data: [{ ...singleSlotResponse.data[0], id: 'ts-item-1' }] };
+
+			jest
+				.spyOn(TransportModule, 'timeslotRequest')
+				.mockResolvedValueOnce(
+					slot1 as unknown as Awaited<ReturnType<typeof TransportModule.timeslotRequest>>,
+				)
+				.mockResolvedValueOnce(
+					slot2 as unknown as Awaited<ReturnType<typeof TransportModule.timeslotRequest>>,
+				);
+
+			const result = await executeModule.execute.call(mockExecuteFunction);
+
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][0] as any).pairedItem).toEqual({ item: 0 });
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][1] as any).pairedItem).toEqual({ item: 1 });
+		});
+
+		it('should handle continueOnFail per item', async () => {
+			const mockExecuteFunction = createMockExecuteFunction({
+				listingId: '550e8400-e29b-41d4-a716-446655440000',
+				start: '2024-01-01T00:00:00.000Z',
+				end: '2024-01-02T00:00:00.000Z',
+				returnAll: false,
+				limit: 50,
+				options: {},
+			});
+			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
+			(mockExecuteFunction.continueOnFail as jest.Mock).mockReturnValue(true);
+
+			jest
+				.spyOn(TransportModule, 'timeslotRequest')
+				.mockRejectedValueOnce(new Error('Timeslot error'))
+				.mockResolvedValueOnce(
+					singleSlotResponse as unknown as Awaited<
+						ReturnType<typeof TransportModule.timeslotRequest>
+					>,
+				);
+
+			const result = await executeModule.execute.call(mockExecuteFunction);
+
+			expect(result[0]).toHaveLength(2);
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][0] as any).json.error).toBe('Timeslot error');
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][0] as any).pairedItem).toEqual({ item: 0 });
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			expect((result[0][1] as any).pairedItem).toEqual({ item: 1 });
+		});
+	});
 });

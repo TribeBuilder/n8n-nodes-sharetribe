@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import {
 	Sharetribe,
 	ENDPOINTS,
@@ -9,45 +9,60 @@ import { DateTime } from 'luxon';
 import { StockAdjustmentsQueryBuilder } from './Builder';
 
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+	const items = this.getInputData();
 	const returnData: INodeExecutionData[] = [];
-
-	const listingId = this.getNodeParameter('listingId', 0) as string;
-	const createdAtStart = this.getNodeParameter('createdAtStart', 0) as DateTime;
-	const createdAtEnd = this.getNodeParameter('createdAtEnd', 0) as DateTime;
-	const simplify = this.getNodeParameter('simplify', 0, true) as boolean;
-	const stockFields = simplify ? [] : (this.getNodeParameter('stockFields', 0, []) as string[]);
-	const listingFields = simplify ? [] : (this.getNodeParameter('listingFields', 0, []) as string[]);
-	const transactionFields = simplify
-		? []
-		: (this.getNodeParameter('transactionFields', 0, []) as string[]);
-	const userFields = simplify ? [] : (this.getNodeParameter('userFields', 0, []) as string[]);
-
-	// Build query params using fluent builder
-	const { qs, resultOptions } = new StockAdjustmentsQueryBuilder(this)
-		.withOptions({
-			nodeOptions: { outputFields: { stockFields, listingFields, transactionFields, userFields } },
-			simplify,
-			returnAll: this.getNodeParameter('returnAll', 0, false) as boolean,
-			limit: this.getNodeParameter('limit', 0, DEFAULT_QUERY_LIMIT) as number,
-		})
-		.withListingId(listingId)
-		.withTimeRange(createdAtStart, createdAtEnd)
-		.build();
-
-	// Execute API request
 	const sharetribe = new Sharetribe(this);
-	const { data, meta } = await sharetribe.query(
-		ENDPOINTS.STOCK_ADJUSTMENTS_QUERY,
-		qs,
-		resultOptions,
-	);
+	let summaryMeta: IDataObject | undefined;
 
-	returnData.push(...data);
+	for (let i = 0; i < items.length; i++) {
+		try {
+			const listingId = this.getNodeParameter('listingId', i) as string;
+			const createdAtStart = this.getNodeParameter('createdAtStart', i) as DateTime;
+			const createdAtEnd = this.getNodeParameter('createdAtEnd', i) as DateTime;
+			const simplify = this.getNodeParameter('simplify', i, true) as boolean;
+			const stockFields = simplify
+				? []
+				: (this.getNodeParameter('stockFields', i, []) as string[]);
+			const listingFields = simplify
+				? []
+				: (this.getNodeParameter('listingFields', i, []) as string[]);
+			const transactionFields = simplify
+				? []
+				: (this.getNodeParameter('transactionFields', i, []) as string[]);
+			const userFields = simplify ? [] : (this.getNodeParameter('userFields', i, []) as string[]);
 
-	// Add execution hints
-	const summary = generateExecutionSummary(this, returnData.length, meta);
+			const { qs, resultOptions } = new StockAdjustmentsQueryBuilder(this)
+				.withOptions({
+					nodeOptions: { outputFields: { stockFields, listingFields, transactionFields, userFields } },
+					simplify,
+					returnAll: this.getNodeParameter('returnAll', i, false) as boolean,
+					limit: this.getNodeParameter('limit', i, DEFAULT_QUERY_LIMIT) as number,
+				})
+				.withListingId(listingId)
+				.withTimeRange(createdAtStart, createdAtEnd)
+				.build();
+
+			const { data, meta } = await sharetribe.query(ENDPOINTS.STOCK_ADJUSTMENTS_QUERY, qs, resultOptions);
+			if (meta?.totalItems != null) {
+				summaryMeta = items.length === 1
+					? meta
+					: { totalItems: ((summaryMeta?.totalItems as number) ?? 0) + (meta.totalItems as number) };
+			}
+			data.forEach((item) => {
+				item.pairedItem = { item: i };
+			});
+			returnData.push(...data);
+		} catch (error) {
+			if (this.continueOnFail()) {
+				returnData.push({ json: { error: error.message }, pairedItem: { item: i } });
+				continue;
+			}
+			throw error;
+		}
+	}
+
 	this.addExecutionHints({
-		message: summary,
+		message: generateExecutionSummary(this, returnData.length, summaryMeta),
 		location: 'outputPane',
 	});
 
