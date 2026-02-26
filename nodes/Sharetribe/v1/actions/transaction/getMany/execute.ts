@@ -4,48 +4,67 @@ import {
 	ENDPOINTS,
 	DEFAULT_QUERY_LIMIT,
 	generateExecutionSummary,
-	hintMultipleInputItems,
 } from '../../../helpers/Sharetribe';
 import { TransactionQueryBuilder } from './Builder';
 
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 	const items = this.getInputData();
 	const returnData: INodeExecutionData[] = [];
-
-	const simplify = this.getNodeParameter('simplify', 0, true) as boolean;
-	const transactionFields = simplify ? [] : (this.getNodeParameter('transactionFields', 0, []) as string[]);
-	const listingFields = simplify ? [] : (this.getNodeParameter('listingFields', 0, []) as string[]);
-	const userFields = simplify ? [] : (this.getNodeParameter('userFields', 0, []) as string[]);
-	const filterOptions = this.getNodeParameter('filterOptions', 0, {}) as IDataObject;
-	const sortOptions = this.getNodeParameter('sort', 0, {}) as IDataObject;
-
-	// Build query params using fluent builder
-	const { qs, resultOptions } = new TransactionQueryBuilder(this)
-		.withOptions({
-			nodeOptions: { outputFields: { transactionFields, listingFields, userFields } },
-			simplify,
-			countOnly: this.getNodeParameter('countOnly', 0, false) as boolean,
-			returnAll: this.getNodeParameter('returnAll', 0, false) as boolean,
-			limit: this.getNodeParameter('limit', 0, DEFAULT_QUERY_LIMIT) as number,
-		})
-		.withFilters(filterOptions)
-		.withSort(sortOptions)
-		.build();
-
-	// Execute API request
 	const sharetribe = new Sharetribe(this);
-	const { data, meta } = await sharetribe.query(ENDPOINTS.TRANSACTIONS_QUERY, qs, resultOptions);
+	let summaryMeta: IDataObject | undefined;
 
-	returnData.push(...data);
+	for (let i = 0; i < items.length; i++) {
+		try {
+			const simplify = this.getNodeParameter('simplify', i, true) as boolean;
+			const transactionFields = simplify
+				? []
+				: (this.getNodeParameter('transactionFields', i, []) as string[]);
+			const listingFields = simplify
+				? []
+				: (this.getNodeParameter('listingFields', i, []) as string[]);
+			const userFields = simplify ? [] : (this.getNodeParameter('userFields', i, []) as string[]);
+			const filterOptions = this.getNodeParameter('filterOptions', i, {}) as IDataObject;
+			const sortOptions = this.getNodeParameter('sort', i, {}) as IDataObject;
 
-	// Add execution hints
-	const summary = generateExecutionSummary(this, returnData.length, meta);
+			const { qs, resultOptions } = new TransactionQueryBuilder(this)
+				.withOptions({
+					nodeOptions: { outputFields: { transactionFields, listingFields, userFields } },
+					simplify,
+					countOnly: this.getNodeParameter('countOnly', i, false) as boolean,
+					returnAll: this.getNodeParameter('returnAll', i, false) as boolean,
+					limit: this.getNodeParameter('limit', i, DEFAULT_QUERY_LIMIT) as number,
+				})
+				.withFilters(filterOptions)
+				.withSort(sortOptions)
+				.build();
+
+			const { data, meta } = await sharetribe.query(ENDPOINTS.TRANSACTIONS_QUERY, qs, resultOptions);
+			if (meta?.totalItems != null) {
+				summaryMeta = items.length === 1
+					? meta
+					: { totalItems: ((summaryMeta?.totalItems as number) ?? 0) + (meta.totalItems as number) };
+			}
+			data.forEach((item) => {
+				item.pairedItem = { item: i };
+			});
+			returnData.push(...data);
+		} catch (error) {
+			if (this.continueOnFail()) {
+				returnData.push({ json: { error: error.message }, pairedItem: { item: i } });
+				continue;
+			}
+			throw error;
+		}
+	}
+
+	const countOnly = this.getNodeParameter('countOnly', 0, false) as boolean;
+	const summaryCount = countOnly
+		? returnData.reduce((sum, item) => sum + ((item.json.totalItems as number) ?? 0), 0)
+		: returnData.length;
 	this.addExecutionHints({
-		message: summary,
+		message: generateExecutionSummary(this, summaryCount, countOnly ? undefined : summaryMeta),
 		location: 'outputPane',
 	});
-
-	hintMultipleInputItems(this, items.length);
 
 	return [returnData];
 }

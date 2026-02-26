@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { Sharetribe, generateExecutionSummary, hintMultipleInputItems, ENDPOINTS } from '../../../helpers/Sharetribe';
+import { Sharetribe, generateExecutionSummary, multipleInputItemsHint, ENDPOINTS } from '../../../helpers/Sharetribe';
 
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 	const items = this.getInputData();
@@ -16,7 +16,8 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 		location: 'outputPane',
 	});
 
-	hintMultipleInputItems(this, items.length);
+	const itemsHint = multipleInputItemsHint(items.length);
+	if (itemsHint) this.addExecutionHints(itemsHint);
 
 	return [returnData];
 }

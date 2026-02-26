@@ -1,7 +1,7 @@
 import type { IExecuteFunctions, INodeExecutionData, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { assetRequest } from '../../../transport';
-import { flattenSharetribeResponse, resolveAssetReferences, hintMultipleInputItems } from '../../../helpers/Sharetribe.utils';
+import { flattenSharetribeResponse, resolveAssetReferences, multipleInputItemsHint } from '../../../helpers/Sharetribe.utils';
 
 /**
  * Get assets from the Asset Delivery API
@@ -123,7 +123,8 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 		location: 'outputPane',
 	});
 
-	hintMultipleInputItems(this, items.length);
+	const itemsHint = multipleInputItemsHint(items.length);
+	if (itemsHint) this.addExecutionHints(itemsHint);
 
 	return [data];
 }
