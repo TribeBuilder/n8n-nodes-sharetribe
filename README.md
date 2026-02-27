@@ -1,6 +1,6 @@
 # n8n-nodes-sharetribe
 
-This is an n8n community node. It lets you use [Sharetribe](sharetribe.com) in your n8n workflows.
+This is an n8n community node. It lets you use [Sharetribe](https://sharetribe.com) in your n8n workflows.
 
 Sharetribe is a cloud platform for building and running online marketplaces. It provides the backend infrastructure — user management, listings, transactions, messaging, and payments — so marketplace operators can launch without building from scratch.
 
