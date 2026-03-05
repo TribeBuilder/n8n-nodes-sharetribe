@@ -38,6 +38,14 @@ export class FieldsetBuilder {
 	}
 
 	/**
+	 * Add email address to query params for email-based lookup
+	 */
+	withEmail(email: string): this {
+		this.qs.email = email;
+		return this;
+	}
+
+	/**
 	 * Store fields for later building
 	 */
 	withFields(fieldsToReturn: string[], outputMode: string = 'selectedFields'): this {
