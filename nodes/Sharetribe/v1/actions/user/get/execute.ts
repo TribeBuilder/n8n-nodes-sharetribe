@@ -15,7 +15,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 
 	for (let i = 0; i < items.length; i++) {
 		try {
-			const userId = this.getNodeParameter('userId', i) as string;
+			const lookUpBy = this.getNodeParameter('lookUpBy', i, 'id') as string;
 			const simplify = this.getNodeParameter('simplify', i, true) as boolean;
 			const fieldsToReturn = simplify
 				? []
@@ -23,13 +23,22 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 			const outputMode = simplify ? OUTPUT_MODES.SIMPLIFIED : OUTPUT_MODES.SELECTED_FIELDS;
 
 			// Build query params using fluent builder
-			const { qs, endpoint } = new FieldsetBuilder(
+			const builder = new FieldsetBuilder(
 				this,
 				API_RESOURCES.USER,
 				UI_RESOURCES.USER,
 				ENDPOINTS.USERS_GET,
-			)
-				.withResourceId(userId, i)
+			);
+
+			if (lookUpBy === 'email') {
+				const userEmail = this.getNodeParameter('userEmail', i) as string;
+				builder.withEmail(userEmail);
+			} else {
+				const userId = this.getNodeParameter('userId', i) as string;
+				builder.withResourceId(userId, i);
+			}
+
+			const { qs, endpoint } = builder
 				.withFields(fieldsToReturn, outputMode)
 				.withOptions({ outputFields: { userFields: fieldsToReturn } })
 				.build();
