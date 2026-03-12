@@ -39,6 +39,7 @@ export class SharetribeTrigger implements INodeType {
 			},
 		],
 		properties: triggerProperties,
+		usableAsTool: true,
 	};
 
 	async poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
