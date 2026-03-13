@@ -839,6 +839,7 @@ export type UiResource = (typeof UI_RESOURCES)[keyof typeof UI_RESOURCES];
 export const UI_OPERATIONS = {
 	ADJUST: 'adjust',
 	APPROVE: 'approve',
+	APPROVE_USER: 'approveUser',
 	CLOSE: 'close',
 	CREATE: 'create',
 	DELETE: 'delete',

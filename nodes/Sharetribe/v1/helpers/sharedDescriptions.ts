@@ -393,7 +393,7 @@ export function makeExtendedDataCollectionField(config: {
 			},
 		},
 		placeholder: `Add ${displayName}`,
-		description: ',. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
+		description: `${displayName} for this resource. In JSON mode: top-level shallow merge only — set a key to <code>null</code> to remove it. In manual mode: supports dot-notation (e.g. <code>address.city</code>) to set nested keys. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.`,
 		options: [
 			{
 				displayName,
