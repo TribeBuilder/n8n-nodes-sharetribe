@@ -22,7 +22,7 @@ export const descriptions: INodeProperties[] = [
 		options: [
 			{
 				name: 'Approve',
-				value: 'approveUser',
+				value: 'approve',
 				description: 'Approve user currently in <code>pendingApproval</code> state',
 				action: 'Approve a user',
 			},
