@@ -47,7 +47,7 @@ export const updatePermissionsDescription: UserProperties = [
 			},
 		],
 		description:
-			'Select which permissions to update. Only selected permissions will be sent to the API.',
+			'Select which permissions to update. Denying permissions is only effective with corresponding console configured access control. <a href="https://www.sharetribe.com/help/en/collections/8975285-permissions" target="_blank">Learn more</a>.',
 	},
 	{
 		displayName: 'Can Read Data',
