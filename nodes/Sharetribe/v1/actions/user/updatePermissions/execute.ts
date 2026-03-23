@@ -2,7 +2,6 @@ import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-wor
 import {
 	FieldsetBuilder,
 	Sharetribe,
-	validateValidUuid,
 	generateExecutionSummary,
 	API_RESOURCES,
 	ENDPOINTS,
@@ -17,31 +16,11 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 	for (let i = 0; i < items.length; i++) {
 		try {
 			const userId = this.getNodeParameter('userId', i) as string;
-
-			validateValidUuid(this, i, userId, UI_RESOURCES.USER);
-
-			const body: IDataObject = { id: userId };
-
-			const permissionValue = (flag: boolean) => (flag ? 'permission/allow' : 'permission/deny');
-
-			const canCreateListings = this.getNodeParameter('canCreateListings', i, undefined);
-			if (canCreateListings !== undefined) {
-				body.postListings = permissionValue(canCreateListings as boolean);
-			}
-
-			const canInitiateTransactions = this.getNodeParameter(
+			const permissionsToUpdate = this.getNodeParameter('permissionsToUpdate', i, [
+				'canCreateListings',
 				'canInitiateTransactions',
-				i,
-				undefined,
-			);
-			if (canInitiateTransactions !== undefined) {
-				body.initiateTransactions = permissionValue(canInitiateTransactions as boolean);
-			}
-
-			const canRead = this.getNodeParameter('canRead', i, undefined);
-			if (canRead !== undefined) {
-				body.read = permissionValue(canRead as boolean);
-			}
+				'canRead',
+			]) as string[];
 
 			const simplify = this.getNodeParameter('simplify', i, true) as boolean;
 			const fieldsToReturn = simplify
@@ -49,7 +28,6 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				: (this.getNodeParameter('userFields', i, []) as string[]);
 			const outputMode = simplify ? OUTPUT_MODES.SIMPLIFIED : OUTPUT_MODES.SELECTED_FIELDS;
 
-			// Build query params using fluent builder
 			const { qs } = new FieldsetBuilder(
 				this,
 				API_RESOURCES.USER,
@@ -60,6 +38,23 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				.withFields(fieldsToReturn, outputMode)
 				.withOptions({ outputFields: { userFields: fieldsToReturn } })
 				.build();
+
+			const permissionValue = (flag: boolean) => (flag ? 'permission/allow' : 'permission/deny');
+			const body: IDataObject = { id: userId };
+
+			if (permissionsToUpdate.includes('canCreateListings')) {
+				body.postListings = permissionValue(
+					this.getNodeParameter('canCreateListings', i, true) as boolean,
+				);
+			}
+			if (permissionsToUpdate.includes('canInitiateTransactions')) {
+				body.initiateTransactions = permissionValue(
+					this.getNodeParameter('canInitiateTransactions', i, true) as boolean,
+				);
+			}
+			if (permissionsToUpdate.includes('canRead')) {
+				body.read = permissionValue(this.getNodeParameter('canRead', i, true) as boolean);
+			}
 
 			// Always include permissions in the sparse fields so the response shows the updated values
 			const fieldsKey = 'fields.user';
