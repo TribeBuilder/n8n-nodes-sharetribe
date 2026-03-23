@@ -22,34 +22,33 @@ export const updatePermissionsDescription: UserProperties = [
 		options: USER_RELATIONSHIP_OPTIONS,
 	}),
 	{
-		displayName: 'Can Create Listings',
-		name: 'canCreateListings',
-		type: 'boolean',
-		default: true,
+		displayName: 'Permissions to Update',
+		name: 'permissionsToUpdate',
+		type: 'multiOptions',
+		default: ['canRead', 'canCreateListings', 'canInitiateTransactions'],
 		displayOptions: {
 			show: {
 				resource: [UI_RESOURCES.USER],
 				operation: [UI_OPERATIONS.UPDATE_PERMISSIONS],
 			},
 		},
-		description: 'Whether this user is allowed to create listings (postListings permission)',
-	},
-
-	{
-		displayName: 'Can Initiate Transactions',
-		name: 'canInitiateTransactions',
-		type: 'boolean',
-		default: true,
-		displayOptions: {
-			show: {
-				resource: [UI_RESOURCES.USER],
-				operation: [UI_OPERATIONS.UPDATE_PERMISSIONS],
+		options: [
+			{
+				name: 'Read Data',
+				value: 'canRead',
 			},
-		},
+			{
+				name: 'Create Listings',
+				value: 'canCreateListings',
+			},
+			{
+				name: 'Initiate Transactions',
+				value: 'canInitiateTransactions',
+			},
+		],
 		description:
-			'Whether this user is allowed to initiate transactions (initiateTransactions permission)',
+			'Select which permissions to update. Denying permissions is only effective with corresponding console configured access control. <a href="https://www.sharetribe.com/help/en/collections/8975285-permissions" target="_blank">Learn more</a>.',
 	},
-
 	{
 		displayName: 'Can Read Data',
 		name: 'canRead',
@@ -59,8 +58,38 @@ export const updatePermissionsDescription: UserProperties = [
 			show: {
 				resource: [UI_RESOURCES.USER],
 				operation: [UI_OPERATIONS.UPDATE_PERMISSIONS],
+				permissionsToUpdate: ['canRead'],
 			},
 		},
 		description: 'Whether this user is allowed to view listings and related data (read permission)',
+	},
+	{
+		displayName: 'Can Create Listings',
+		name: 'canCreateListings',
+		type: 'boolean',
+		default: true,
+		displayOptions: {
+			show: {
+				resource: [UI_RESOURCES.USER],
+				operation: [UI_OPERATIONS.UPDATE_PERMISSIONS],
+				permissionsToUpdate: ['canCreateListings'],
+			},
+		},
+		description: 'Whether this user is allowed to create listings (postListings permission)',
+	},
+	{
+		displayName: 'Can Initiate Transactions',
+		name: 'canInitiateTransactions',
+		type: 'boolean',
+		default: true,
+		displayOptions: {
+			show: {
+				resource: [UI_RESOURCES.USER],
+				operation: [UI_OPERATIONS.UPDATE_PERMISSIONS],
+				permissionsToUpdate: ['canInitiateTransactions'],
+			},
+		},
+		description:
+			'Whether this user is allowed to initiate transactions (initiateTransactions permission)',
 	},
 ];

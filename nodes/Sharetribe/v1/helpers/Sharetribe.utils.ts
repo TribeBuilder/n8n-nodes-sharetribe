@@ -1234,6 +1234,7 @@ export const sparseAttributesFromNodeParameter = (
 			identityProviders: 'identityProviders',
 			metadata: 'profile.metadata',
 			pendingEmail: 'pendingEmail',
+			permissions: 'permissions',
 			stripeConnected: 'stripeConnected',
 			firstName: 'profile.firstName',
 			lastName: 'profile.lastName',
@@ -1993,7 +1994,8 @@ export const publicDataField: INodeProperties = {
 	type: 'json',
 	default: '{}',
 	hint: 'Given object is merged on the top level (i.e. non-deep merge). Nested values are set as given. Top level keys set as <code>null</code> are removed.',
-	description: 'Public data. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
+	description:
+		'Public data. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
 };
 
 export const protectedDataField: INodeProperties = {
@@ -2002,7 +2004,8 @@ export const protectedDataField: INodeProperties = {
 	type: 'json',
 	default: '{}',
 	hint: 'Given object is merged on the top level (i.e. non-deep merge). Nested values are set as given. Top level keys set as <code>null</code> are removed.',
-	description: 'Protected data. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
+	description:
+		'Protected data. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
 };
 
 export const privateDataField: INodeProperties = {
@@ -2011,7 +2014,8 @@ export const privateDataField: INodeProperties = {
 	type: 'json',
 	default: '{}',
 	hint: 'Given object is merged on the top level (i.e. non-deep merge). Nested values are set as given. Top level keys set as <code>null</code> are removed.',
-	description: 'Private data. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
+	description:
+		'Private data. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
 };
 
 export const metadataField: INodeProperties = {
@@ -2020,7 +2024,8 @@ export const metadataField: INodeProperties = {
 	type: 'assignmentCollection',
 	default: {},
 	hint: 'Given object is merged on the top level (i.e. non-deep merge). Nested values are set as given. Top level keys set as <code>null</code> are removed.',
-	description: 'Metadata. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
+	description:
+		'Metadata. <a href="https://www.sharetribe.com/docs/references/extended-data/" target="_blank">Learn more</a>.',
 };
 
 /**
