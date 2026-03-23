@@ -1255,6 +1255,7 @@ export const USER_ATTRIBUTE_KEYS = [
 	'protectedData',
 	'privateData',
 	'metadata',
+	'permissions',
 ] as const;
 
 /**
@@ -1323,6 +1324,7 @@ export const USER_ATTRIBUTE_FIELD_MAP: Record<string, string> = {
 	identityProviders: 'identityProviders',
 	deleted: 'deleted',
 	effectivePermissionSet: 'effectivePermissionSet',
+	permissions: 'permissions',
 	userType: 'profile.publicData.userType',
 };
 
@@ -1888,6 +1890,12 @@ export const USER_RELATIONSHIP_OPTIONS = [
 		name: 'Effective Permission Set',
 		value: 'effectivePermissionSet',
 		description: "User's final permissions, determined after considering all factors",
+	},
+	{
+		name: 'Permissions',
+		value: 'permissions',
+		description:
+			"User's provisional permissions, which may be modified by other factors such as global settings",
 	},
 	{ name: 'Private Data', value: 'privateData', description: 'Private extended data' },
 	{ name: 'Profile Image', value: 'profileImage', description: "User's profile image" },
