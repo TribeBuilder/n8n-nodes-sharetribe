@@ -120,10 +120,9 @@ export class SharetribeTrigger implements INodeType {
 				currentSequenceId = maxSequenceId;
 			}
 		} catch (error) {
-			// In manual mode or first poll: always throw so errors surface to the user.
-			// In production polling: log and return null — the next interval retries automatically.
-			// Transport already retries transient 502/503/504 with backoff before we get here.
-			if (isManualMode || !lastSequenceId) {
+			// Manual mode: throw so errors surface when debugging.
+			// Production: swallow and return null — next poll interval retries automatically.
+			if (isManualMode) {
 				throw error;
 			}
 
