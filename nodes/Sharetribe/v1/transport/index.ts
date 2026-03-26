@@ -393,7 +393,7 @@ const FRIENDLY_ERROR_MESSAGES: Record<string, string> = {
 	'request-upload-over-limit': 'The uploaded file exceeds the maximum allowed size.',
 
 	// 429 - Rate Limit
-	'too-many-requests': 'Rate limit exceeded. The request will be automatically retried.',
+	'too-many-requests': 'Rate limit exceeded after multiple retries. Please try again later.',
 
 	// Stock-specific
 	'old-total-mismatch': 'The stock quantity has changed since it was last read. Fetch the current stock and retry.',
@@ -536,9 +536,7 @@ export function handleSharetribeError(
 				break;
 			}
 			case 429:
-				description =
-					'Rate limit exceeded. The request will be automatically retried with exponential backoff.';
-				errorResponse.isRetryable = true;
+				description = 'Rate limit exceeded after multiple retries. Please try again later.';
 				break;
 			case 500:
 				description = 'Internal server error. Please try again later.';
@@ -637,7 +635,9 @@ export async function apiRequest<T extends IDataObject = IDataObject>(
 	} catch (error) {
 		cleanup();
 
-		if (error.response?.status === 429 && retryAttempt < maxRetries) {
+		const statusCode = error.response?.status;
+		const isRetryable = statusCode === 429 || statusCode === 502 || statusCode === 503 || statusCode === 504;
+		if (isRetryable && retryAttempt < maxRetries) {
 			const backoffDelay = Math.min(1000 * Math.pow(2, retryAttempt), 30000);
 			await sleep(backoffDelay);
 

@@ -71,52 +71,67 @@ export class SharetribeTrigger implements INodeType {
 		const allEvents: IDataObject[] = [];
 		let shouldContinue = true;
 
-		while (shouldContinue) {
-			const builder = new PollingQueryBuilder();
+		try {
+			while (shouldContinue) {
+				const builder = new PollingQueryBuilder();
 
-			if (!isManualMode && currentSequenceId) {
-				builder.withStartAfterSequenceId(currentSequenceId);
-				this.logger.debug(`Continuing from sequence ID: ${currentSequenceId}`);
-			} else if (!isManualMode && !currentSequenceId) {
-				builder.withStartTime(DateTime.utc());
-				this.logger.debug('First poll - starting from current time');
-			} else if (isManualMode && currentSequenceId) {
-				builder.withStartAfterSequenceId(currentSequenceId);
-			} else {
-				this.logger.debug('Manual mode - fetching all available events');
+				if (!isManualMode && currentSequenceId) {
+					builder.withStartAfterSequenceId(currentSequenceId);
+					this.logger.debug(`Continuing from sequence ID: ${currentSequenceId}`);
+				} else if (!isManualMode && !currentSequenceId) {
+					builder.withStartTime(DateTime.utc());
+					this.logger.debug('First poll - starting from current time');
+				} else if (isManualMode && currentSequenceId) {
+					builder.withStartAfterSequenceId(currentSequenceId);
+				} else {
+					this.logger.debug('Manual mode - fetching all available events');
+				}
+
+				const query = builder
+					.withEventTypes(filteredEventTypes)
+					.withEventAttributes(eventAttributes)
+					.withResourceFilter(resourceId, includeRelatedResources)
+					.build();
+
+				this.logger.debug(`Polling Sharetribe with params: ${JSON.stringify(query)}`);
+				const res = await apiRequest.call(this, 'GET', 'events/query', {}, query);
+
+				const events = (Array.isArray(res?.data) ? res.data : []) as unknown as IDataObject[];
+				this.logger.debug(`Received ${events.length} events`);
+
+				if (events.length === 0) {
+					shouldContinue = false;
+					break;
+				}
+
+				allEvents.push(...events);
+
+				if (events.length < 100) {
+					shouldContinue = false;
+					break;
+				}
+
+				const maxSequenceId = extractMaxSequenceId(events);
+				if (!maxSequenceId) {
+					shouldContinue = false;
+					break;
+				}
+
+				currentSequenceId = maxSequenceId;
+			}
+		} catch (error) {
+			// Manual mode: throw so errors surface when debugging.
+			// Production: swallow and return null — next poll interval retries automatically.
+			if (isManualMode) {
+				throw error;
 			}
 
-			const query = builder
-				.withEventTypes(filteredEventTypes)
-				.withEventAttributes(eventAttributes)
-				.withResourceFilter(resourceId, includeRelatedResources)
-				.build();
-
-			this.logger.debug(`Polling Sharetribe with params: ${JSON.stringify(query)}`);
-			const res = await apiRequest.call(this, 'GET', 'events/query', {}, query);
-
-			const events = (Array.isArray(res?.data) ? res.data : []) as unknown as IDataObject[];
-			this.logger.debug(`Received ${events.length} events`);
-
-			if (events.length === 0) {
-				shouldContinue = false;
-				break;
-			}
-
-			allEvents.push(...events);
-
-			if (events.length < 100) {
-				shouldContinue = false;
-				break;
-			}
-
-			const maxSequenceId = extractMaxSequenceId(events);
-			if (!maxSequenceId) {
-				shouldContinue = false;
-				break;
-			}
-
-			currentSequenceId = maxSequenceId;
+			const node = this.getNode();
+			this.logger.error(
+				`[${node.name}] Poll failed (workflow ${this.getWorkflow().id}): ${(error as Error).message}`,
+				{ node: node.name, error },
+			);
+			return null;
 		}
 
 		if (!allEvents.length) {
