@@ -637,7 +637,9 @@ export async function apiRequest<T extends IDataObject = IDataObject>(
 	} catch (error) {
 		cleanup();
 
-		if (error.response?.status === 429 && retryAttempt < maxRetries) {
+		const statusCode = error.response?.status;
+		const isRetryable = statusCode === 429 || statusCode === 502 || statusCode === 503 || statusCode === 504;
+		if (isRetryable && retryAttempt < maxRetries) {
 			const backoffDelay = Math.min(1000 * Math.pow(2, retryAttempt), 30000);
 			await sleep(backoffDelay);
 
