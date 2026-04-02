@@ -106,7 +106,8 @@ interface TestResult {
 const PROJECT_DIR = path.resolve(__dirname, '..');
 const E2E_DIR = path.resolve(PROJECT_DIR, 'workflows/e2e-tests');
 const CONFIG_PATH = path.resolve(__dirname, 'runE2eTests.config.yaml');
-const SHARETRIBE_API = 'https://flex-api.sharetribe.com';
+const SHARETRIBE_INTEG_API = 'https://flex-integ-api.sharetribe.com';
+const SHARETRIBE_MARKETPLACE_API = 'https://flex-api.sharetribe.com';
 const ASSET_CDN_BASE = 'https://cdn.st-api.com/v1/assets/pub';
 const N8N_IMAGE = 'n8nio/n8n';
 const N8N_PORT = 5678;
@@ -281,7 +282,7 @@ function n8nExec(args: string, config: Config): string {
 
 /** Get an anonymous Marketplace API token (for user signup) */
 async function getAnonymousToken(config: Config): Promise<string> {
-	const res = await fetch(`${SHARETRIBE_API}/v1/auth/token`, {
+	const res = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/auth/token`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: new URLSearchParams({
@@ -301,7 +302,7 @@ async function getAnonymousToken(config: Config): Promise<string> {
 
 /** Get an Integration API token (for operator-level actions) */
 async function getIntegrationToken(config: Config): Promise<string> {
-	const res = await fetch(`${SHARETRIBE_API}/v1/auth/token`, {
+	const res = await fetch(`${SHARETRIBE_INTEG_API}/v1/auth/token`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: new URLSearchParams({
@@ -322,7 +323,7 @@ async function getIntegrationToken(config: Config): Promise<string> {
 
 /** Get a customer token via resource owner password grant */
 async function getCustomerToken(config: Config): Promise<string> {
-	const res = await fetch(`${SHARETRIBE_API}/v1/auth/token`, {
+	const res = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/auth/token`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: new URLSearchParams({
@@ -350,7 +351,7 @@ async function getUserIdByLogin(
 	config: Config,
 ): Promise<string | null> {
 	// Try password grant
-	const tokenRes = await fetch(`${SHARETRIBE_API}/v1/auth/token`, {
+	const tokenRes = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/auth/token`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: new URLSearchParams({
@@ -367,7 +368,7 @@ async function getUserIdByLogin(
 	const { access_token } = (await tokenRes.json()) as { access_token: string };
 
 	// Get current user to retrieve their UUID
-	const userRes = await fetch(`${SHARETRIBE_API}/v1/api/current_user/show`, {
+	const userRes = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/api/current_user/show`, {
 		headers: { Authorization: `Bearer ${access_token}` },
 	});
 
@@ -385,7 +386,7 @@ async function createUser(
 	config: Config,
 ): Promise<string> {
 	// Create user via Marketplace API
-	const createRes = await fetch(`${SHARETRIBE_API}/v1/api/current_user/create`, {
+	const createRes = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/api/current_user/create`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${anonymousToken}`,
@@ -411,7 +412,7 @@ async function createUser(
 	}
 
 	// Approve via Integration API
-	const approveRes = await fetch(`${SHARETRIBE_API}/v1/integration_api/users/approve`, {
+	const approveRes = await fetch(`${SHARETRIBE_INTEG_API}/v1/integration_api/users/approve`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${integrationToken}`,
@@ -453,7 +454,7 @@ async function createTestListing(
 	listingType: string,
 	integrationToken: string,
 ): Promise<string> {
-	const res = await fetch(`${SHARETRIBE_API}/v1/integration_api/listings/create`, {
+	const res = await fetch(`${SHARETRIBE_INTEG_API}/v1/integration_api/listings/create`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${integrationToken}`,
@@ -490,7 +491,7 @@ async function createTestListing(
 
 /** Initialize stock on a listing via Integration API (compare_and_set with oldTotal=null) */
 async function initializeListingStock(listingId: string, integrationToken: string): Promise<void> {
-	const res = await fetch(`${SHARETRIBE_API}/v1/integration_api/stock/compare_and_set`, {
+	const res = await fetch(`${SHARETRIBE_INTEG_API}/v1/integration_api/stock/compare_and_set`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${integrationToken}`,
@@ -511,7 +512,7 @@ async function initializeListingStock(listingId: string, integrationToken: strin
 
 /** Approve a listing via Integration API (transitions from pendingApproval → published) */
 async function approveListing(listingId: string, integrationToken: string): Promise<void> {
-	const res = await fetch(`${SHARETRIBE_API}/v1/integration_api/listings/approve`, {
+	const res = await fetch(`${SHARETRIBE_INTEG_API}/v1/integration_api/listings/approve`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${integrationToken}`,
@@ -530,7 +531,7 @@ async function approveListing(listingId: string, integrationToken: string): Prom
 async function createNegotiationTransaction(config: Config, listingId: string): Promise<string> {
 	const token = await getCustomerToken(config);
 
-	const res = await fetch(`${SHARETRIBE_API}/v1/api/transactions/initiate`, {
+	const res = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/api/transactions/initiate`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -559,7 +560,7 @@ async function createPurchaseTransaction(
 ): Promise<{ transactionId: string; stockReservationId: string }> {
 	const token = await getCustomerToken(config);
 
-	const res = await fetch(`${SHARETRIBE_API}/v1/api/transactions/initiate`, {
+	const res = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/api/transactions/initiate`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${token}`,
@@ -594,7 +595,7 @@ async function createPurchaseTransaction(
 	// Query via Integration API to capture the stock reservation ID
 	const integrationToken = await getIntegrationToken(config);
 	const txnRes = await fetch(
-		`${SHARETRIBE_API}/v1/integration_api/transactions/show?id=${transactionId}&include=stockReservation`,
+		`${SHARETRIBE_INTEG_API}/v1/integration_api/transactions/show?id=${transactionId}&include=stockReservation`,
 		{ headers: { Authorization: `Bearer ${integrationToken}` } },
 	);
 
@@ -766,7 +767,7 @@ async function setupFixtures(config: Config): Promise<void> {
 		if (existingId) {
 			console.log(`  Found existing customer: ${config.testUser.email} (${existingId})`);
 			const stateRes = await fetch(
-				`${SHARETRIBE_API}/v1/integration_api/users/show?id=${existingId}`,
+				`${SHARETRIBE_INTEG_API}/v1/integration_api/users/show?id=${existingId}`,
 				{ headers: { Authorization: `Bearer ${integrationToken}` } },
 			);
 			if (stateRes.ok) {
@@ -784,7 +785,7 @@ async function setupFixtures(config: Config): Promise<void> {
 			}
 		} else {
 			console.log(`  Creating customer (pendingApproval): ${config.testUser.email}...`);
-			const createRes = await fetch(`${SHARETRIBE_API}/v1/api/current_user/create`, {
+			const createRes = await fetch(`${SHARETRIBE_MARKETPLACE_API}/v1/api/current_user/create`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${anonymousToken}`,
@@ -871,8 +872,9 @@ function setupCredential(config: Config): void {
 				marketplaceApiClientId: config.marketplaceApi.clientId,
 				planType: 'extend',
 				environment: 'production',
-				baseUrl: SHARETRIBE_API,
-				accessTokenUrl: `${SHARETRIBE_API}/v1/auth/token`,
+				baseUrl: SHARETRIBE_INTEG_API,
+				marketplaceApiBaseUrl: SHARETRIBE_MARKETPLACE_API,
+				accessTokenUrl: `${SHARETRIBE_INTEG_API}/v1/auth/token`,
 				scope: 'integ',
 			},
 		},
@@ -1290,7 +1292,7 @@ async function main(): Promise<void> {
 			if (!config.fixtures.closedListingId) {
 				try {
 					const integrationToken = await getIntegrationToken(config);
-					const queryRes = await fetch(`${SHARETRIBE_API}/v1/integration_api/listings/query`, {
+					const queryRes = await fetch(`${SHARETRIBE_INTEG_API}/v1/integration_api/listings/query`, {
 						method: 'POST',
 						headers: {
 							Authorization: `Bearer ${integrationToken}`,

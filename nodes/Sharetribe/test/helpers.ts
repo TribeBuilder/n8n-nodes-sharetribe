@@ -32,6 +32,8 @@ export const mockSharetribeCredentials: ICredentialDataDecryptedObject = {
 	accessToken: 'test-access-token',
 	marketplaceId: 'test-marketplace',
 	marketplaceApiClientId: 'test-marketplace-client-id',
+	baseUrl: 'https://flex-integ-api.sharetribe.com',
+	marketplaceApiBaseUrl: 'https://flex-api.sharetribe.com',
 	assetApiBaseUrl: 'https://asset-delivery.sharetribe.com',
 	domain: 'sharetribe.com',
 };
@@ -133,7 +135,7 @@ export function createMockRequestOptions(
 ): Partial<IHttpRequestOptions> {
 	return {
 		method,
-		url: `https://flex-api.sharetribe.com/v1${endpoint}`,
+		url: `https://flex-integ-api.sharetribe.com/v1${endpoint}`,
 		headers: {
 			'Content-Type': 'application/json',
 			Authorization: 'Bearer test-access-token',
