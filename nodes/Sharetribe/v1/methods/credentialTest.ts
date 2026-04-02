@@ -118,7 +118,7 @@ async function validateMarketplaceClientId(
 ): Promise<string> {
 	const integrationMarketplaceId = integrationResult.marketplaceId;
 	const proPlan = credentialData.planType === 'pro';
-	const accessTokenUrl = credentialData.accessTokenUrl as string;
+	const marketplaceApiBaseUrl = credentialData.marketplaceApiBaseUrl as string;
 	let clientId: string | undefined;
 
 	if (proPlan) {
@@ -170,7 +170,7 @@ async function validateMarketplaceClientId(
 	try {
 		anonTokenResponse = await helpers.request({
 			method: 'POST',
-			url: accessTokenUrl,
+			url: `${marketplaceApiBaseUrl}/v1/auth/token`,
 			form: {
 				grant_type: 'client_credentials',
 				client_id: clientId,

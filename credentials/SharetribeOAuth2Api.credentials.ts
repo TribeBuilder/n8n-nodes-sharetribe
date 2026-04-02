@@ -90,13 +90,19 @@ export class SharetribeOAuth2Api implements ICredentialType {
 			displayName: 'Base URL',
 			name: 'baseUrl',
 			type: 'hidden',
+			default: 'https://flex-integ-api.sharetribe.com',
+		},
+		{
+			displayName: 'Marketplace API Base URL',
+			name: 'marketplaceApiBaseUrl',
+			type: 'hidden',
 			default: 'https://flex-api.sharetribe.com',
 		},
 		{
 			displayName: 'Access Token URL',
 			name: 'accessTokenUrl',
 			type: 'hidden',
-			default: 'https://flex-api.sharetribe.com/v1/auth/token',
+			default: 'https://flex-integ-api.sharetribe.com/v1/auth/token',
 			required: true,
 		},
 		{
@@ -128,10 +134,10 @@ export class SharetribeOAuth2Api implements ICredentialType {
 	];
 
 	async preAuthentication(this: IHttpRequestHelper, credentials: ICredentialDataDecryptedObject) {
-		const baseUrl = credentials.baseUrl as string;
+		const accessTokenUrl = credentials.accessTokenUrl as string;
 		const { access_token } = (await this.helpers.httpRequest({
 			method: 'POST',
-			url: `${baseUrl}/v1/auth/token`,
+			url: accessTokenUrl,
 			body: {
 				client_id: credentials.clientId,
 				client_secret: credentials.clientSecret,

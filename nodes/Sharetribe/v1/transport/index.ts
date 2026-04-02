@@ -125,11 +125,11 @@ export async function getAnonymousToken(context: TransportContext): Promise<stri
 
 	const credentials = await context.getCredentials('sharetribeOAuth2Api');
 	const marketplaceClientId = await getMarketplaceClientId(context);
-	const accessTokenUrl = credentials.accessTokenUrl as string;
+	const marketplaceApiBaseUrl = credentials.marketplaceApiBaseUrl as string;
 
 	const tokenResponse = await context.helpers.httpRequest({
 		method: 'POST',
-		url: accessTokenUrl,
+		url: `${marketplaceApiBaseUrl}/v1/auth/token`,
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			Accept: 'application/json',
@@ -838,14 +838,14 @@ export async function timeslotRequest(
 	query: IDataObject,
 ): Promise<TimeslotResponse> {
 	const credentials = await this.getCredentials('sharetribeOAuth2Api');
-	const baseUrl = credentials.baseUrl as string;
+	const marketplaceApiBaseUrl = credentials.marketplaceApiBaseUrl as string;
 
 	let retryCount = 0;
 	const maxRetries = 1;
 
 	while (retryCount <= maxRetries) {
 		const accessToken = await getAnonymousToken(this);
-		const url = `${baseUrl}/v1/api/timeslots/query`;
+		const url = `${marketplaceApiBaseUrl}/v1/api/timeslots/query`;
 		const headers: IDataObject = {
 			Accept: 'application/json',
 			Authorization: `Bearer ${accessToken}`,
@@ -863,7 +863,7 @@ export async function timeslotRequest(
 
 		try {
 			// Build full URL for logging
-			let fullUrl = `${baseUrl}/v1/api/timeslots/query`;
+			let fullUrl = `${marketplaceApiBaseUrl}/v1/api/timeslots/query`;
 			if (Object.keys(query).length > 0) {
 				const queryStr = Object.entries(query)
 					.map(([key, value]) => {

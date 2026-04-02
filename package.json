@@ -12,7 +12,8 @@
 		"automation",
 		"workflow",
 		"integration",
-		"api"
+		"api",
+		"n8n-nodes-sharetribe"
 	],
 	"author": {
 		"name": "Greg Long",
