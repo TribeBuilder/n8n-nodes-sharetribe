@@ -96,11 +96,11 @@ export async function getContentPageNames(
 ): Promise<INodePropertyOptions[]> {
 	try {
 		const credentials = await this.getCredentials('sharetribeOAuth2Api');
-		const baseUrl = credentials.baseUrl as string;
+		const marketplaceApiBaseUrl = credentials.marketplaceApiBaseUrl as string;
 		const accessToken = await getAnonymousToken(this);
 		const sitemapResponse = await this.helpers.httpRequest({
 			method: 'GET',
-			url: `${baseUrl}/v1/api/sitemap_data/query_assets?pathPrefix=/content/pages/`,
+			url: `${marketplaceApiBaseUrl}/v1/api/sitemap_data/query_assets?pathPrefix=/content/pages/`,
 			headers: {
 				Accept: 'application/json',
 				Authorization: `Bearer ${accessToken}`,
