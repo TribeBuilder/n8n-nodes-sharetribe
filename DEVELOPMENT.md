@@ -138,7 +138,6 @@ To manually verify credential tests, pack and install into a standalone n8n inst
 ```bash
 # 1. Build and generate metadata (requires a local n8n repo checkout)
 npm run build
-node ../n8n/packages/core/bin/generate-metadata
 
 # 2. Pack and install as a community node
 npm pack
