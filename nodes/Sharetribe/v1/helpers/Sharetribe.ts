@@ -400,6 +400,7 @@ export {
 	buildOutputConfig,
 	multipleInputItemsHint,
 	fetchExternalImageFromUrl,
+	fetchSitemapAnonymously,
 } from './Sharetribe.utils';
 
 export * from './sharedDescriptions';

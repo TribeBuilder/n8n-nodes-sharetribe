@@ -49,6 +49,7 @@ import type {
 	FetchedImage,
 } from './Sharetribe.types';
 import { listSearchAssetCall } from './Sharetribe';
+import { getAnonymousMarketplaceToken, getMarketplaceApiBaseUrl } from '../transport';
 
 export function normalizeGeolocation(
 	geolocation: unknown,
@@ -2605,4 +2606,27 @@ export async function fetchExternalImageFromUrl(
 	}
 
 	return { buffer, fileName, contentType };
+}
+
+/**
+ * Fetches content page sitemap data from the Marketplace API using an anonymous token.
+ * No Integration API credentials are used — this is a public read.
+ *
+ * @param context - The n8n execution context
+ * @returns The sitemap response data for content pages
+ */
+export async function fetchSitemapAnonymously(
+	context: ILoadOptionsFunctions,
+): Promise<IDataObject> {
+	const marketplaceApiBaseUrl = await getMarketplaceApiBaseUrl(context);
+	const accessToken = await getAnonymousMarketplaceToken(context);
+
+	return context.helpers.httpRequest({
+		method: 'GET',
+		url: `${marketplaceApiBaseUrl}/v1/api/sitemap_data/query_assets?pathPrefix=/content/pages/`,
+		headers: {
+			Accept: 'application/json',
+			Authorization: `Bearer ${accessToken}`,
+		},
+	});
 }

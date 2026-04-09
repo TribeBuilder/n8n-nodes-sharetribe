@@ -33,9 +33,12 @@ interface CachedMarketplaceClientId {
 }
 
 /**
- * Clear cached anonymous token (e.g., on 401 error)
+ * Clears the cached anonymous Marketplace API token from workflow static data.
+ * Called on 401 responses to force re-authentication on the next request.
+ *
+ * @param context - The n8n execution context
  */
-export function clearAnonymousToken(context: TransportContext): void {
+export function clearAnonymousMarketplaceToken(context: TransportContext): void {
 	const staticData = context.getWorkflowStaticData('node');
 	delete staticData.anonymousToken;
 }
@@ -115,7 +118,7 @@ export async function getMarketplaceClientId(context: TransportContext): Promise
  * Get or fetch anonymous access token with caching
  * Stores token in node static data and only refreshes when expired
  */
-export async function getAnonymousToken(context: TransportContext): Promise<string> {
+export async function getAnonymousMarketplaceToken(context: TransportContext): Promise<string> {
 	const staticData = context.getWorkflowStaticData('node');
 	const cached = staticData.anonymousToken as CachedAnonymousToken | undefined;
 
@@ -153,6 +156,17 @@ export async function getAnonymousToken(context: TransportContext): Promise<stri
 	};
 
 	return accessToken;
+}
+
+/**
+ * Fetches the Marketplace API base URL from credentials.
+ *
+ * @param context - The n8n execution context
+ * @returns The Marketplace API base URL (e.g. 'https://flex-api.sharetribe.com')
+ */
+export async function getMarketplaceApiBaseUrl(context: TransportContext): Promise<string> {
+	const credentials = await context.getCredentials('sharetribeOAuth2Api');
+	return credentials.marketplaceApiBaseUrl as string;
 }
 
 /**
@@ -844,7 +858,7 @@ export async function timeslotRequest(
 	const maxRetries = 1;
 
 	while (retryCount <= maxRetries) {
-		const accessToken = await getAnonymousToken(this);
+		const accessToken = await getAnonymousMarketplaceToken(this);
 		const url = `${marketplaceApiBaseUrl}/v1/api/timeslots/query`;
 		const headers: IDataObject = {
 			Accept: 'application/json',
@@ -894,7 +908,7 @@ export async function timeslotRequest(
 
 			if (statusCode >= 400) {
 				if (statusCode === 401 && retryCount < maxRetries) {
-					clearAnonymousToken(this);
+					clearAnonymousMarketplaceToken(this);
 					retryCount++;
 					continue;
 				}
