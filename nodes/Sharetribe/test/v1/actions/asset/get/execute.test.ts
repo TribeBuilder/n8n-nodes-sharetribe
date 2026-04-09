@@ -1,6 +1,6 @@
 import * as executeModule from '../../../../../v1/actions/asset/get/execute';
 import * as SharetribeHelpers from '../../../../../v1/helpers/Sharetribe';
-import * as TransportModule from '../../../../../v1/transport';
+import * as UtilsModule from '../../../../../v1/helpers/Sharetribe.utils';
 import { createMockExecuteFunction, mockSharetribeRequest } from '../../../../helpers';
 
 describe('asset/get', () => {
@@ -24,7 +24,7 @@ describe('asset/get', () => {
 			options: {},
 		});
 
-		// Mock assetRequest function
+		// Mock fetchPublicAssets function
 		const mockAssetResponse = {
 			data: {
 				id: 'asset-123',
@@ -39,12 +39,12 @@ describe('asset/get', () => {
 		};
 
 		jest
-		.spyOn(TransportModule, 'assetRequest')
-		.mockResolvedValue(mockAssetResponse as unknown as Awaited<ReturnType<typeof TransportModule.assetRequest>>);
+		.spyOn(UtilsModule, 'fetchPublicAssets')
+		.mockResolvedValue(mockAssetResponse as unknown as Awaited<ReturnType<typeof UtilsModule.fetchPublicAssets>>);
 
 		const result = await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.assetRequest).toHaveBeenCalledWith(
+		expect(UtilsModule.fetchPublicAssets).toHaveBeenCalledWith(
 			'alias',
 			['/content/translations.json'],
 			expect.any(String),

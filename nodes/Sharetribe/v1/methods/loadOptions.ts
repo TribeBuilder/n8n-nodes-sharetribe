@@ -3,11 +3,7 @@
  *
  */
 
-import {
-	ILoadOptionsFunctions,
-	INodePropertyOptions,
-	IDataObject,
-} from 'n8n-workflow';
+import { ILoadOptionsFunctions, INodePropertyOptions, IDataObject } from 'n8n-workflow';
 import {
 	BookingStates,
 	CurrencyCode,
@@ -16,8 +12,7 @@ import {
 	USER_FILTER_METADATA,
 	SHARETRIBE_EVENT_TYPES,
 } from '../helpers/Sharetribe.types';
-import { assetRequest } from '../transport';
-import { fetchSitemapAnonymously } from '../helpers/Sharetribe';
+import { fetchPublicAssets, fetchSitemapAnonymously } from '../helpers/Sharetribe';
 import { flattenSharetribeResponse, resolveAssetReferences } from '../helpers/Sharetribe.utils';
 
 export async function getBookingStates(
@@ -51,7 +46,7 @@ async function getAssetKeys(
 	assetPath: string,
 ): Promise<INodePropertyOptions[]> {
 	try {
-		const response = await assetRequest.call(ctx, 'alias', [assetPath], 'latest');
+		const response = await fetchPublicAssets.call(ctx, 'alias', [assetPath], 'latest');
 		const included = (response.included as IDataObject[]) || [];
 		const normalizedAssets = flattenSharetribeResponse(response as unknown as IDataObject);
 

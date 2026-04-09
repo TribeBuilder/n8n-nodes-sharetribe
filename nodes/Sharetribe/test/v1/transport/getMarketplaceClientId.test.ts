@@ -1,6 +1,6 @@
 import { NodeOperationError } from 'n8n-workflow';
 import { extractClientIdFromHtml } from '../../../v1/helpers/Sharetribe.utils';
-import { getMarketplaceClientId } from '../../../v1/transport';
+import { getPublicMarketplaceClientId } from '../../../v1/transport';
 import { createMockExecuteFunction, mockSharetribeCredentials } from '../../helpers';
 
 const VALID_CLIENT_ID = '9e4f0bee-6174-4bfe-998a-6d433e7dbcc4';
@@ -58,7 +58,7 @@ describe('extractClientIdFromHtml', () => {
 	});
 });
 
-describe('getMarketplaceClientId', () => {
+describe('getPublicMarketplaceClientId', () => {
 	let staticData: Record<string, unknown>;
 
 	beforeEach(() => {
@@ -84,7 +84,7 @@ describe('getMarketplaceClientId', () => {
 				marketplaceApiClientId: VALID_CLIENT_ID,
 			});
 
-			const result = await getMarketplaceClientId(ctx);
+			const result = await getPublicMarketplaceClientId(ctx);
 			expect(result).toBe(VALID_CLIENT_ID);
 		});
 
@@ -94,8 +94,8 @@ describe('getMarketplaceClientId', () => {
 				marketplaceApiClientId: '',
 			});
 
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(
 				'Marketplace API Client ID is required',
 			);
 		});
@@ -108,8 +108,8 @@ describe('getMarketplaceClientId', () => {
 				marketplaceUrl: '',
 			});
 
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(
 				'Marketplace URL is required',
 			);
 		});
@@ -123,7 +123,7 @@ describe('getMarketplaceClientId', () => {
 
 			(ctx.helpers.httpRequest as jest.Mock).mockResolvedValue(makeHtmlDoubleEncoded(VALID_CLIENT_ID));
 
-			const result = await getMarketplaceClientId(ctx);
+			const result = await getPublicMarketplaceClientId(ctx);
 			expect(result).toBe(VALID_CLIENT_ID);
 
 			expect(ctx.helpers.httpRequest).toHaveBeenCalledWith(
@@ -143,7 +143,7 @@ describe('getMarketplaceClientId', () => {
 
 			(ctx.helpers.httpRequest as jest.Mock).mockResolvedValue(makeHtmlDoubleEncoded(VALID_CLIENT_ID));
 
-			await getMarketplaceClientId(ctx);
+			await getPublicMarketplaceClientId(ctx);
 
 			expect(staticData.marketplaceClientId).toEqual({
 				clientId: VALID_CLIENT_ID,
@@ -163,7 +163,7 @@ describe('getMarketplaceClientId', () => {
 				marketplaceUrl,
 			});
 
-			const result = await getMarketplaceClientId(ctx);
+			const result = await getPublicMarketplaceClientId(ctx);
 			expect(result).toBe(VALID_CLIENT_ID);
 			expect(ctx.helpers.httpRequest).not.toHaveBeenCalled();
 		});
@@ -185,7 +185,7 @@ describe('getMarketplaceClientId', () => {
 
 			(ctx.helpers.httpRequest as jest.Mock).mockResolvedValue(makeHtmlDoubleEncoded(newClientId));
 
-			const result = await getMarketplaceClientId(ctx);
+			const result = await getPublicMarketplaceClientId(ctx);
 			expect(result).toBe(newClientId);
 			expect(ctx.helpers.httpRequest).toHaveBeenCalled();
 			expect(staticData.marketplaceClientId).toEqual({
@@ -202,8 +202,8 @@ describe('getMarketplaceClientId', () => {
 
 			(ctx.helpers.httpRequest as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow("Please check the 'Marketplace URL'");
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow("Please check the 'Marketplace URL'");
 		});
 
 		it('should throw NodeOperationError when client ID cannot be extracted', async () => {
@@ -214,8 +214,8 @@ describe('getMarketplaceClientId', () => {
 
 			(ctx.helpers.httpRequest as jest.Mock).mockResolvedValue('<html><body>No state here</body></html>');
 
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
-			await expect(getMarketplaceClientId(ctx)).rejects.toThrow(
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(NodeOperationError);
+			await expect(getPublicMarketplaceClientId(ctx)).rejects.toThrow(
 				'Could not extract Marketplace API Client ID',
 			);
 		});

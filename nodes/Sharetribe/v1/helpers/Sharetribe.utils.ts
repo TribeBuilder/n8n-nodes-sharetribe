@@ -1,7 +1,10 @@
 import type {
 	IDataObject,
 	IExecuteFunctions,
+	IHookFunctions,
 	ILoadOptionsFunctions,
+	IPollFunctions,
+	IWebhookFunctions,
 	INodeProperties,
 	INodePropertyOptions,
 	INodeListSearchResult,
@@ -9,8 +12,9 @@ import type {
 	FieldType,
 	NodeExecutionHint,
 	IHttpRequestOptions,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeOperationError, validateFieldType } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError, validateFieldType } from 'n8n-workflow';
 import { DateTime } from 'luxon';
 import set from 'lodash/set';
 import {
@@ -47,9 +51,11 @@ import type {
 	ResultOptions,
 	OutputMode,
 	FetchedImage,
+	AssetDeliveryResponse,
+	TimeslotResponse,
 } from './Sharetribe.types';
 import { listSearchAssetCall } from './Sharetribe';
-import { getAnonymousMarketplaceToken, getMarketplaceApiBaseUrl } from '../transport';
+import { getAnonymousMarketplaceToken, clearAnonymousMarketplaceToken, getMarketplaceApiBaseUrl, getAssetApiBaseUrl, getPublicMarketplaceClientId } from '../transport';
 
 export function normalizeGeolocation(
 	geolocation: unknown,
@@ -2629,4 +2635,235 @@ export async function fetchSitemapAnonymously(
 			Authorization: `Bearer ${accessToken}`,
 		},
 	});
+}
+
+/**
+ * Fetches assets from the Sharetribe Asset Delivery API (CDN).
+ * Authentication is via public marketplace client ID in the URL path — no OAuth headers.
+ *
+ * @param this - The n8n execution context
+ * @param accessType - 'alias' for latest/named versions, 'version' for specific version IDs
+ * @param assetPaths - Array of asset paths (currently supports single asset per request)
+ * @param versionOrAlias - Version ID or alias name (default: 'latest')
+ * @returns Asset delivery response with data, included resources, and version metadata
+ */
+export async function fetchPublicAssets(
+	this:
+		| IHookFunctions
+		| IExecuteFunctions
+		| ILoadOptionsFunctions
+		| IPollFunctions
+		| IWebhookFunctions,
+	accessType: 'alias' | 'version',
+	assetPaths: string[],
+	versionOrAlias: string = 'latest',
+): Promise<AssetDeliveryResponse> {
+	const assetApiBaseUrl = await getAssetApiBaseUrl(this);
+	const marketplaceClientId = await getPublicMarketplaceClientId(this);
+
+	const baseUrl = `${assetApiBaseUrl}/${marketplaceClientId}`;
+	const urlPath: string = `/a/${versionOrAlias}/`;
+	const query: IDataObject = {};
+
+	query.assets = assetPaths.map((p) => (p.startsWith('/') ? p.slice(1) : p));
+
+	const headers: IDataObject = {
+		Accept: 'application/json',
+	};
+
+	const options: IHttpRequestOptions = {
+		method: 'GET',
+		url: `${baseUrl}${urlPath}`,
+		qs: query,
+		arrayFormat: 'comma',
+		headers,
+		json: true,
+		returnFullResponse: true,
+	};
+
+	try {
+		let fullUrl = `${baseUrl}${urlPath}`;
+		if (Object.keys(query).length > 0) {
+			const queryStr = Object.entries(query)
+				.map(([key, value]) => {
+					const val = Array.isArray(value) ? value.join(',') : String(value);
+					return `${key}=${encodeURIComponent(val)}`;
+				})
+				.join('&');
+			fullUrl += `?${queryStr}`;
+		}
+		this.logger.debug(`[Sharetribe] Asset request: ${fullUrl}`);
+		this.logger.debug(
+			`[Sharetribe] Fetching asset(s) from CDN: ${accessType}=${versionOrAlias}, path(s)=${JSON.stringify(assetPaths)}`,
+		);
+
+		const response = await this.helpers.httpRequest(options);
+		const statusCode = response.statusCode as number;
+
+		this.logger.debug(`[Sharetribe Asset] Response status code: ${statusCode}`);
+
+		if (statusCode >= 400) {
+			if (statusCode === 404) {
+				throw new NodeApiError(this.getNode(), response as JsonObject, {
+					message: 'Asset Not Found',
+					description: `No asset found at path: ${assetPaths} (${accessType}: ${versionOrAlias})`,
+					httpCode: '404',
+				});
+			}
+
+			if (statusCode === 403) {
+				throw new NodeApiError(this.getNode(), response as JsonObject, {
+					message: 'Asset Access Forbidden',
+					description:
+						'Invalid client ID or the asset is not accessible. Please check your Sharetribe credentials.',
+					httpCode: '403',
+				});
+			}
+
+			throw new NodeApiError(this.getNode(), response as JsonObject, {
+				message: 'Asset Delivery API Error',
+				description: `HTTP ${statusCode}: Failed to retrieve asset from CDN`,
+				httpCode: statusCode.toString(),
+			});
+		}
+
+		const body = response.body as AssetDeliveryResponse;
+
+		this.logger.debug(`[Sharetribe Asset] Asset data received`);
+		this.logger.debug(`[Sharetribe Asset] Asset version: ${body.meta?.version}`);
+
+		return body;
+	} catch (error) {
+		const errorResponse = error as {
+			message?: string;
+			code?: string;
+		};
+
+		throw new NodeApiError(this.getNode(), error as JsonObject, {
+			message: 'Asset Delivery API Request Failed',
+			description: errorResponse.message || 'Network error or failed to retrieve asset from CDN',
+		});
+	}
+}
+
+/**
+ * Fetches available booking timeslots from the Marketplace API using an anonymous token.
+ * No Integration API credentials are used — authentication is via a public-read anonymous
+ * token obtained from {@link getAnonymousMarketplaceToken}. Retries once on 401 by clearing
+ * the cached token.
+ *
+ * @param this - The n8n execution context
+ * @param query - Query parameters including listingId, start, end, etc.
+ * @returns Timeslot response with data array and pagination metadata
+ */
+export async function fetchTimeslotsAnonymously(
+	this:
+		| IHookFunctions
+		| IExecuteFunctions
+		| ILoadOptionsFunctions
+		| IPollFunctions
+		| IWebhookFunctions,
+	query: IDataObject,
+): Promise<TimeslotResponse> {
+	const marketplaceApiBaseUrl = await getMarketplaceApiBaseUrl(this);
+
+	let retryCount = 0;
+	const maxRetries = 1;
+
+	while (retryCount <= maxRetries) {
+		const accessToken = await getAnonymousMarketplaceToken(this);
+		const url = `${marketplaceApiBaseUrl}/v1/api/timeslots/query`;
+		const headers: IDataObject = {
+			Accept: 'application/json',
+			Authorization: `Bearer ${accessToken}`,
+		};
+
+		const options: IHttpRequestOptions = {
+			method: 'GET',
+			url: url,
+			qs: query,
+			arrayFormat: 'comma',
+			headers,
+			json: true,
+			returnFullResponse: true,
+		};
+
+		try {
+			// Build full URL for logging
+			let fullUrl = `${marketplaceApiBaseUrl}/v1/api/timeslots/query`;
+			if (Object.keys(query).length > 0) {
+				const queryStr = Object.entries(query)
+					.map(([key, value]) => {
+						const val = Array.isArray(value) ? value.join(',') : String(value);
+						return `${key}=${val}`;
+					})
+					.join('&');
+				fullUrl += `?${queryStr}`;
+			}
+
+			// Log request with wrapping at 120 characters
+			const logPrefix = '[Sharetribe Timeslot] GET ';
+			if (logPrefix.length + fullUrl.length <= 120) {
+				this.logger.debug(`${logPrefix}${fullUrl}`);
+			} else {
+				this.logger.debug(`${logPrefix}${fullUrl.substring(0, 120 - logPrefix.length)}`);
+				let remaining = fullUrl.substring(120 - logPrefix.length);
+				while (remaining.length > 0) {
+					this.logger.debug(`  ${remaining.substring(0, 118)}`);
+					remaining = remaining.substring(118);
+				}
+			}
+
+			const response = await this.helpers.httpRequest(options);
+			const statusCode = response.statusCode as number;
+
+			this.logger.debug(`[Sharetribe Timeslot] Response ${statusCode}`);
+
+			if (statusCode >= 400) {
+				if (statusCode === 401 && retryCount < maxRetries) {
+					clearAnonymousMarketplaceToken(this);
+					retryCount++;
+					continue;
+				}
+
+				if (statusCode === 404) {
+					throw new NodeApiError(this.getNode(), response as JsonObject, {
+						message: 'Timeslots Not Found',
+						description: `No timeslots found for listing: ${query.listingId}`,
+						httpCode: '404',
+					});
+				}
+
+				if (statusCode === 403 || (statusCode === 401 && retryCount >= maxRetries)) {
+					throw new NodeApiError(this.getNode(), response as JsonObject, {
+						message: 'Timeslot Access Forbidden',
+						description:
+							'The timeslots API is not accessible. This is likely because your marketplace access control is set to private, which blocks the anonymous (public-read) authentication that timeslots require.',
+						httpCode: String(statusCode),
+					});
+				}
+
+				throw new NodeApiError(this.getNode(), response as JsonObject, {
+					message: 'Timeslot API Error',
+					description: `HTTP ${statusCode}: Failed to retrieve timeslots`,
+					httpCode: statusCode.toString(),
+				});
+			}
+
+			const body = response.body as TimeslotResponse;
+			return body;
+		} catch (error) {
+			const errorResponse = error as {
+				message?: string;
+				code?: string;
+			};
+
+			throw new NodeApiError(this.getNode(), error as JsonObject, {
+				message: 'Timeslot API Request Failed',
+				description: errorResponse.message || 'Network error or failed to retrieve timeslots',
+			});
+		}
+	}
+
+	throw new NodeOperationError(this.getNode(), 'Failed to retrieve timeslots after retry');
 }

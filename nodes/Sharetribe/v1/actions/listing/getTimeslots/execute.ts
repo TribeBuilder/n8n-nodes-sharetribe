@@ -1,7 +1,7 @@
 import type { IExecuteFunctions, INodeExecutionData, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { DateTime } from 'luxon';
-import { timeslotRequest, assetRequest } from '../../../transport';
+import { fetchPublicAssets, fetchTimeslotsAnonymously } from '../../../helpers/Sharetribe';
 import { TimeslotQueryBuilder } from './Builder';
 
 export async function execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -13,7 +13,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 			// Timeslots use an anonymous (public-read) token. Private marketplaces block anonymous access.
 			// Best-effort check — if the asset request fails for non-authorization reasons, proceed anyway.
 			try {
-				const accessControl = await assetRequest.call(
+				const accessControl = await fetchPublicAssets.call(
 					this,
 					'alias',
 					['/general/access-control.json'],
@@ -62,7 +62,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				qs.page = currentPage;
 				qs.perPage = shouldReturnAll ? 500 : Math.min(queryLimit - allTimeslots.length, 500);
 
-				const response = await timeslotRequest.call(this, qs);
+				const response = await fetchTimeslotsAnonymously.call(this, qs);
 
 				const timeslots = response.data || [];
 				allTimeslots.push(...timeslots);

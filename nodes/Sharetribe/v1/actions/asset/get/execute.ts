@@ -1,6 +1,6 @@
 import type { IExecuteFunctions, INodeExecutionData, IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { assetRequest } from '../../../transport';
+import { fetchPublicAssets } from '../../../helpers/Sharetribe';
 import { flattenSharetribeResponse, resolveAssetReferences, multipleInputItemsHint } from '../../../helpers/Sharetribe.utils';
 
 /**
@@ -73,7 +73,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 		filterKeys = [...emailTextsFilterKeys, ...emailTextsCustomKeys];
 	}
 
-	const response = await assetRequest.call(
+	const response = await fetchPublicAssets.call(
 		this,
 		accessType,
 		[assetPath],

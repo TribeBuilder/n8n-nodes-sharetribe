@@ -2252,6 +2252,34 @@ export interface UserTypesAssetResponse {
 }
 
 /**
+ * Timeslot API response structure from the Sharetribe Marketplace API.
+ */
+export interface TimeslotResponse {
+	data: IDataObject[];
+	meta: {
+		page: number;
+		perPage: number;
+		totalItems: number;
+		totalPages: number;
+	};
+}
+
+/**
+ * Asset Delivery API response structure from the Sharetribe public CDN.
+ */
+export interface AssetDeliveryResponse {
+	data: IDataObject | IDataObject[];
+	included?: Array<{
+		id: string;
+		type: string;
+		attributes: IDataObject;
+	}>;
+	meta: {
+		version?: string;
+	};
+}
+
+/**
  * Result of fetching an image from an external URL via {@link fetchExternalImageFromUrl}.
  */
 export interface FetchedImage {
