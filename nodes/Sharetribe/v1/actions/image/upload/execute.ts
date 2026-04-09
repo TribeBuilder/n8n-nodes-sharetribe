@@ -97,17 +97,17 @@ export async function execute(
 			});
 			returnData.push(...result);
 		} catch (error) {
-			// Handle Sharetribe-specific errors
-			if (error && typeof error === 'object') {
-				handleSharetribeError.call(this, error as JsonObject, 'images/upload');
-			}
-
 			if (this.continueOnFail() || error.httpCode === '404') {
 				returnData.push({
 					json: { error: error.message },
 					pairedItem: { item: i },
 				} as INodeExecutionData);
 				continue;
+			}
+
+			// Enrich and re-throw Sharetribe-specific errors
+			if (error && typeof error === 'object') {
+				handleSharetribeError.call(this, error as JsonObject, 'images/upload');
 			}
 			throw error;
 		}
