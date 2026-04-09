@@ -2250,3 +2250,15 @@ export interface UserTypesAssetResponse {
 		version: string;
 	};
 }
+
+/**
+ * Result of fetching an image from an external URL via {@link fetchExternalImageFromUrl}.
+ */
+export interface FetchedImage {
+	/** The raw image data */
+	buffer: Buffer;
+	/** Filename extracted from Content-Disposition header, or 'image' as default */
+	fileName: string;
+	/** MIME type from Content-Type header, or 'application/octet-stream' as default */
+	contentType: string;
+}

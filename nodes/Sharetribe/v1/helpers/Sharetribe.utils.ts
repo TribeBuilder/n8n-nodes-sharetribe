@@ -8,6 +8,7 @@ import type {
 	INode,
 	FieldType,
 	NodeExecutionHint,
+	IHttpRequestOptions,
 } from 'n8n-workflow';
 import { NodeOperationError, validateFieldType } from 'n8n-workflow';
 import { DateTime } from 'luxon';
@@ -45,6 +46,7 @@ import type {
 	ResultMode,
 	ResultOptions,
 	OutputMode,
+	FetchedImage,
 } from './Sharetribe.types';
 import { listSearchAssetCall } from './Sharetribe';
 
@@ -2559,4 +2561,48 @@ export function multipleInputItemsHint(itemCount: number): NodeExecutionHint | u
 		message: `This node received <b>${itemCount} input items</b> but only ran once — this operation always runs once regardless of input count. Enable <b>Execute Once</b> in node settings, or restructure your workflow if you need to run per input item.`,
 		location: 'outputPane',
 	};
+}
+
+/**
+ * Fetches an image from an external URL. No Sharetribe credentials are involved —
+ * this is a plain unauthenticated HTTP GET to whatever URL the user provided.
+ * Expected use case is pulling a publicly accessible Sharetribe listing image URL
+ * and re-uploading it to Sharetribe via the uploadImage operation, since Sharetribe
+ * requires images to be uploaded directly rather than linked by URL.
+ *
+ * @param context - The n8n execution context
+ * @param url - The external URL to fetch the image from
+ * @returns The fetched image buffer, filename, and content type
+ */
+export async function fetchExternalImageFromUrl(
+	context: IExecuteFunctions,
+	url: URL,
+): Promise<FetchedImage> {
+	const options: IHttpRequestOptions = {
+		method: 'GET',
+		url: url.toString(),
+		returnFullResponse: true,
+		encoding: 'arraybuffer',
+	};
+
+	const res = await context.helpers.httpRequest(options);
+	const buffer = res.body as Buffer;
+	const headers = res.headers ?? {};
+
+	let fileName = 'image';
+	const contentDisposition: string = headers['content-disposition'];
+	if (contentDisposition && contentDisposition.includes('filename')) {
+		const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n\r]+)/i);
+		if (filenameMatch && filenameMatch[1]) {
+			fileName = decodeURIComponent(filenameMatch[1]);
+		}
+	}
+
+	let contentType = 'application/octet-stream';
+	const ct = (headers['content-type'] || headers['Content-Type']) as string | undefined;
+	if (ct) {
+		contentType = ct;
+	}
+
+	return { buffer, fileName, contentType };
 }

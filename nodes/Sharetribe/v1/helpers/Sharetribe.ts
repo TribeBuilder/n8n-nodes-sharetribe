@@ -399,6 +399,7 @@ export {
 	generateExecutionSummary,
 	buildOutputConfig,
 	multipleInputItemsHint,
+	fetchExternalImageFromUrl,
 } from './Sharetribe.utils';
 
 export * from './sharedDescriptions';
