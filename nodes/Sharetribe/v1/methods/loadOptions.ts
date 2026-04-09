@@ -3,11 +3,7 @@
  *
  */
 
-import {
-	ILoadOptionsFunctions,
-	INodePropertyOptions,
-	IDataObject,
-} from 'n8n-workflow';
+import { ILoadOptionsFunctions, INodePropertyOptions, IDataObject } from 'n8n-workflow';
 import {
 	BookingStates,
 	CurrencyCode,
@@ -16,7 +12,7 @@ import {
 	USER_FILTER_METADATA,
 	SHARETRIBE_EVENT_TYPES,
 } from '../helpers/Sharetribe.types';
-import { assetRequest, getAnonymousToken } from '../transport';
+import { fetchPublicAssets, fetchSitemapAnonymously } from '../helpers/Sharetribe';
 import { flattenSharetribeResponse, resolveAssetReferences } from '../helpers/Sharetribe.utils';
 
 export async function getBookingStates(
@@ -50,7 +46,7 @@ async function getAssetKeys(
 	assetPath: string,
 ): Promise<INodePropertyOptions[]> {
 	try {
-		const response = await assetRequest.call(ctx, 'alias', [assetPath], 'latest');
+		const response = await fetchPublicAssets.call(ctx, 'alias', [assetPath], 'latest');
 		const included = (response.included as IDataObject[]) || [];
 		const normalizedAssets = flattenSharetribeResponse(response as unknown as IDataObject);
 
@@ -95,17 +91,7 @@ export async function getContentPageNames(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
 	try {
-		const credentials = await this.getCredentials('sharetribeOAuth2Api');
-		const marketplaceApiBaseUrl = credentials.marketplaceApiBaseUrl as string;
-		const accessToken = await getAnonymousToken(this);
-		const sitemapResponse = await this.helpers.httpRequest({
-			method: 'GET',
-			url: `${marketplaceApiBaseUrl}/v1/api/sitemap_data/query_assets?pathPrefix=/content/pages/`,
-			headers: {
-				Accept: 'application/json',
-				Authorization: `Bearer ${accessToken}`,
-			},
-		});
+		const sitemapResponse = await fetchSitemapAnonymously(this);
 
 		const pages = new Set<string>();
 

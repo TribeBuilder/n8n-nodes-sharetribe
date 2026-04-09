@@ -41,7 +41,6 @@ export const sortDescriptionUser: INodeProperties[] = [
 						name: 'field',
 						type: 'options',
 						options: [...COMMON_SORT_FIELDS_ARRAY],
-						// eslint-disable-next-line n8n-nodes-base/node-param-default-wrong-for-options
 						default: 'createdAt',
 						description: 'The field to sort by. Sort fields can be re-ordered.',
 					},
@@ -51,7 +50,6 @@ export const sortDescriptionUser: INodeProperties[] = [
 						name: 'direction',
 						type: 'options',
 						options: [...SORT_DIRECTION_OPTIONS_ARRAY],
-						// eslint-disable-next-line n8n-nodes-base/node-param-default-wrong-for-options
 						default: 'DESC',
 						description: 'The sorting direction',
 					},

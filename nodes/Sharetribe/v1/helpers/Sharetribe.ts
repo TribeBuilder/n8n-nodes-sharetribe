@@ -6,8 +6,8 @@ import type {
 	ILoadOptionsFunctions,
 } from 'n8n-workflow';
 import type { Endpoints, ResultOptions } from './Sharetribe.types';
-import { apiRequest, assetRequest } from '../transport';
-import { flattenSharetribeResponse, resolveAssetReferences } from './Sharetribe.utils';
+import { apiRequest } from '../transport';
+import { flattenSharetribeResponse, resolveAssetReferences, fetchPublicAssets } from './Sharetribe.utils';
 import { RESULT_MODES, DEFAULT_QUERY_LIMIT } from './Sharetribe.types';
 
 /**
@@ -33,7 +33,7 @@ export async function listSearchAssetCall<T = IDataObject>(
 	context: ILoadOptionsFunctions | IExecuteFunctions,
 	assetAlias: string,
 ): Promise<T> {
-	return (await assetRequest.call(context, 'alias', [assetAlias])) as T;
+	return (await fetchPublicAssets.call(context, 'alias', [assetAlias])) as T;
 }
 
 export class Sharetribe {
@@ -223,12 +223,12 @@ export class Sharetribe {
 	 * Assets are JSON configuration files
 	 * Uses JSON:API normalization to flatten attributes and resolve _ref objects
 	 */
-	async assetRequest(
+	async fetchPublicAssets(
 		accessType: 'alias' | 'version',
 		assetPaths: string[],
 		versionOrAlias: string = 'latest',
 	): Promise<{ data: INodeExecutionData[]; meta?: IDataObject }> {
-		const response = await assetRequest.call(
+		const response = await fetchPublicAssets.call(
 			this.executeFunctions,
 			accessType,
 			assetPaths,
@@ -399,6 +399,10 @@ export {
 	generateExecutionSummary,
 	buildOutputConfig,
 	multipleInputItemsHint,
+	fetchExternalImageFromUrl,
+	fetchSitemapAnonymously,
+	fetchPublicAssets,
+	fetchTimeslotsAnonymously,
 } from './Sharetribe.utils';
 
 export * from './sharedDescriptions';

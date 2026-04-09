@@ -204,11 +204,32 @@ npm run lint:fix
 
 ## Publishing
 
-```bash
-npm run release
-```
+Publishing is handled by GitHub Actions with npm provenance. The local release command no longer publishes to npm directly.
 
-Runs [release-it](https://github.com/release-it/release-it) to handle the complete release process: version bump, build, lint, changelog, git tag, GitHub release, and npm publish.
+### Release flow
+
+1. Merge your PR to `main`
+2. `git fetch && git pull`
+3. Run the release command:
+
+   ```bash
+   npm run release
+   ```
+
+   Since `@n8n/node-cli` 0.23.0, this bumps the version, generates a changelog, commits, tags, pushes, and creates a GitHub release — but skips npm publish. Publishing is left to GitHub Actions.
+
+4. The version tag push triggers `.github/workflows/publish.yml`, which runs `npm run release` in CI. In GitHub Actions, `n8n-node release` detects the CI environment and publishes to npm with provenance enabled (`NPM_CONFIG_PROVENANCE=true`).
+
+### npm authentication
+
+The publish workflow supports two authentication methods:
+
+- **Trusted Publishers (recommended):** Configure OIDC on [npmjs.com](https://www.npmjs.com) under your package settings > Trusted Publishers. No secrets required.
+- **NPM_TOKEN fallback:** Create a Granular Access Token on npmjs.com and add it as `NPM_TOKEN` in your repository's Actions secrets.
+
+### CI
+
+Pull requests and pushes to `main` trigger `.github/workflows/ci.yml`, which runs lint and build to verify the code.
 
 ---
 

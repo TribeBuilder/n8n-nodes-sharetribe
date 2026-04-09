@@ -297,7 +297,6 @@ export function makeDeleteFieldsCollection(
 						name: 'dataType',
 						type: 'options',
 						options: config.dataTypes,
-						// eslint-disable-next-line n8n-nodes-base/node-param-default-wrong-for-options
 						default: 'metadata',
 						description:
 							'The extended data type to delete a field from. <a href="https://www.sharetribe.com/docs/concepts/extended-data/extended-data-introduction/#types-of-extended-data" target="_blank">Learn more</a>.',

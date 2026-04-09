@@ -8,7 +8,7 @@ import type {
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { handleSharetribeError } from '../../../transport';
-import { generateExecutionSummary } from '../../../helpers/Sharetribe';
+import { generateExecutionSummary, fetchExternalImageFromUrl } from '../../../helpers/Sharetribe';
 
 const DEFAULT_FILENAME = 'image';
 
@@ -40,30 +40,10 @@ export async function execute(
 				}
 				this.logger.debug(`Fetching image from URL: ${url}`);
 
-				const res = await this.helpers.httpRequest({
-					method: 'GET',
-					url: url.toString(),
-					returnFullResponse: true,
-					encoding: 'arraybuffer',
-				});
-
-				binaryBuffer = res.body as Buffer;
-
-				const headers = res.headers ?? {};
-
-				const contentDisposition: string = headers['content-disposition'];
-				if (contentDisposition && contentDisposition.includes('filename')) {
-					const filenameMatch = contentDisposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n\r]+)/i);
-					if (filenameMatch && filenameMatch[1]) {
-						fileName = decodeURIComponent(filenameMatch[1]);
-					}
-				}
-
-				const ct = (headers['content-type'] || headers['Content-Type']) as string | undefined;
-
-				if (ct) {
-					contentType = ct;
-				}
+				const fetched = await fetchExternalImageFromUrl(this, url);
+				binaryBuffer = fetched.buffer;
+				fileName = fetched.fileName;
+				contentType = fetched.contentType;
 			} else if (mode === 'file') {
 				binaryMetadata = this.helpers.assertBinaryData(i, binaryPropertyName);
 
@@ -117,17 +97,17 @@ export async function execute(
 			});
 			returnData.push(...result);
 		} catch (error) {
-			// Handle Sharetribe-specific errors
-			if (error && typeof error === 'object') {
-				handleSharetribeError.call(this, error as JsonObject, 'images/upload');
-			}
-
 			if (this.continueOnFail() || error.httpCode === '404') {
 				returnData.push({
 					json: { error: error.message },
 					pairedItem: { item: i },
 				} as INodeExecutionData);
 				continue;
+			}
+
+			// Enrich and re-throw Sharetribe-specific errors
+			if (error && typeof error === 'object') {
+				handleSharetribeError.call(this, error as JsonObject, 'images/upload');
 			}
 			throw error;
 		}

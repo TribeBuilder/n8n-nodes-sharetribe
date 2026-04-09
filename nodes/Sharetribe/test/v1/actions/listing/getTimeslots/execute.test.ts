@@ -1,7 +1,7 @@
 import { NodeOperationError } from 'n8n-workflow';
 import { Settings } from 'luxon';
 import * as executeModule from '../../../../../v1/actions/listing/getTimeslots/execute';
-import * as TransportModule from '../../../../../v1/transport';
+import * as UtilsModule from '../../../../../v1/helpers/Sharetribe.utils';
 import { TimeslotQueryBuilder } from '../../../../../v1/actions/listing/getTimeslots/Builder';
 import { createMockExecuteFunction } from '../../../../helpers';
 
@@ -61,16 +61,16 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		const result = await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.timeslotRequest).toHaveBeenCalledWith({
+		expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith({
 			listingId: '550e8400-e29b-41d4-a716-446655440000',
 			start: '2024-01-01T00:00:00.000Z',
 			end: '2024-01-02T00:00:00.000Z',
@@ -127,22 +127,22 @@ describe('listing/getTimeslots', () => {
 			},
 		};
 
-		const timeslotRequestMock = jest
-			.spyOn(TransportModule, 'timeslotRequest')
+		const fetchTimeslotsAnonymouslyMock = jest
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValueOnce(
 				mockPage1Response as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			)
 			.mockResolvedValueOnce(
 				mockPage2Response as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		const result = await executeModule.execute.call(mockExecuteFunction);
 
-		expect(timeslotRequestMock).toHaveBeenCalledTimes(2);
+		expect(fetchTimeslotsAnonymouslyMock).toHaveBeenCalledTimes(2);
 		expect(result[0]).toHaveLength(600);
 	});
 
@@ -175,10 +175,10 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
@@ -215,16 +215,16 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.timeslotRequest).toHaveBeenCalledWith({
+		expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith({
 			listingId: '550e8400-e29b-41d4-a716-446655440000',
 			start: '2024-01-01T00:00:00.000Z',
 			end: '2024-01-02T00:00:00.000Z',
@@ -274,16 +274,16 @@ describe('listing/getTimeslots', () => {
 			};
 
 			jest
-				.spyOn(TransportModule, 'timeslotRequest')
+				.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 				.mockResolvedValue(
 					mockTimeslotResponse as unknown as Awaited<
-						ReturnType<typeof TransportModule.timeslotRequest>
+						ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 					>,
 				);
 
 			await executeModule.execute.call(mockExecuteFunction);
 
-			expect(TransportModule.timeslotRequest).toHaveBeenCalledWith(
+			expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith(
 				expect.objectContaining({
 					intervalDuration: expected,
 				}),
@@ -316,16 +316,16 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.timeslotRequest).toHaveBeenCalledWith({
+		expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith({
 			listingId: '550e8400-e29b-41d4-a716-446655440000',
 			start: '2024-01-01T00:00:00.000Z',
 			end: '2024-01-07T00:00:00.000Z',
@@ -364,16 +364,16 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.timeslotRequest).toHaveBeenCalledWith({
+		expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith({
 			listingId: '550e8400-e29b-41d4-a716-446655440000',
 			start: '2024-01-01T00:00:00.000Z',
 			end: '2024-01-07T00:00:00.000Z',
@@ -412,16 +412,16 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.timeslotRequest).toHaveBeenCalledWith({
+		expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith({
 			listingId: '550e8400-e29b-41d4-a716-446655440000',
 			start: '2024-01-01T00:00:00.000Z',
 			end: '2024-01-07T00:00:00.000Z',
@@ -471,16 +471,16 @@ describe('listing/getTimeslots', () => {
 		};
 
 		jest
-			.spyOn(TransportModule, 'timeslotRequest')
+			.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 			.mockResolvedValue(
 				mockTimeslotResponse as unknown as Awaited<
-					ReturnType<typeof TransportModule.timeslotRequest>
+					ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 				>,
 			);
 
 		await executeModule.execute.call(mockExecuteFunction);
 
-		expect(TransportModule.timeslotRequest).toHaveBeenCalledWith({
+		expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith({
 			listingId: '550e8400-e29b-41d4-a716-446655440000',
 			start: '2024-01-01T00:00:00.000Z',
 			end: '2024-01-07T00:00:00.000Z',
@@ -532,16 +532,16 @@ describe('listing/getTimeslots', () => {
 			};
 
 			jest
-				.spyOn(TransportModule, 'timeslotRequest')
+				.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 				.mockResolvedValue(
 					mockTimeslotResponse as unknown as Awaited<
-						ReturnType<typeof TransportModule.timeslotRequest>
+						ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 					>,
 				);
 
 			await executeModule.execute.call(mockExecuteFunction);
 
-			expect(TransportModule.timeslotRequest).toHaveBeenCalledWith(
+			expect(UtilsModule.fetchTimeslotsAnonymously).toHaveBeenCalledWith(
 				expect.objectContaining({
 					minDurationStartingInInterval: expected,
 				}),
@@ -630,17 +630,17 @@ describe('listing/getTimeslots', () => {
 			});
 			(mockExecuteFunction.getInputData as jest.Mock).mockReturnValue([{ json: {} }, { json: {} }]);
 
-			const timeslotRequestMock = jest
-				.spyOn(TransportModule, 'timeslotRequest')
+			const fetchTimeslotsAnonymouslyMock = jest
+				.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 				.mockResolvedValue(
 					singleSlotResponse as unknown as Awaited<
-						ReturnType<typeof TransportModule.timeslotRequest>
+						ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 					>,
 				);
 
 			const result = await executeModule.execute.call(mockExecuteFunction);
 
-			expect(timeslotRequestMock).toHaveBeenCalledTimes(2);
+			expect(fetchTimeslotsAnonymouslyMock).toHaveBeenCalledTimes(2);
 			expect(result[0]).toHaveLength(2);
 		});
 
@@ -659,12 +659,12 @@ describe('listing/getTimeslots', () => {
 			const slot2 = { ...singleSlotResponse, data: [{ ...singleSlotResponse.data[0], id: 'ts-item-1' }] };
 
 			jest
-				.spyOn(TransportModule, 'timeslotRequest')
+				.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 				.mockResolvedValueOnce(
-					slot1 as unknown as Awaited<ReturnType<typeof TransportModule.timeslotRequest>>,
+					slot1 as unknown as Awaited<ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>>,
 				)
 				.mockResolvedValueOnce(
-					slot2 as unknown as Awaited<ReturnType<typeof TransportModule.timeslotRequest>>,
+					slot2 as unknown as Awaited<ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>>,
 				);
 
 			const result = await executeModule.execute.call(mockExecuteFunction);
@@ -688,11 +688,11 @@ describe('listing/getTimeslots', () => {
 			(mockExecuteFunction.continueOnFail as jest.Mock).mockReturnValue(true);
 
 			jest
-				.spyOn(TransportModule, 'timeslotRequest')
+				.spyOn(UtilsModule, 'fetchTimeslotsAnonymously')
 				.mockRejectedValueOnce(new Error('Timeslot error'))
 				.mockResolvedValueOnce(
 					singleSlotResponse as unknown as Awaited<
-						ReturnType<typeof TransportModule.timeslotRequest>
+						ReturnType<typeof UtilsModule.fetchTimeslotsAnonymously>
 					>,
 				);
 
