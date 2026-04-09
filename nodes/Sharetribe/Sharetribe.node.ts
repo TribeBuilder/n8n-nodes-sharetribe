@@ -7,7 +7,7 @@ export class Sharetribe extends VersionedNodeType {
 		const baseDescription: INodeTypeBaseDescription = {
 			displayName: 'Sharetribe',
 			name: 'sharetribe',
-			icon: { light: 'file:../../icons/sharetribe.svg', dark: 'file:../icons/sharetribe.dark.svg' },
+			icon: { light: 'file:../../icons/sharetribe.svg', dark: 'file:../../icons/sharetribe.dark.svg' },
 			group: ['output'],
 			subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 			description: 'Work with Sharetribe resources',
