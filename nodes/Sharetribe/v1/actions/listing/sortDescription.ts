@@ -38,7 +38,6 @@ export const sortDescriptionListing: INodeProperties[] = [
 							loadOptionsMethod: 'getListingSortFields',
 							loadOptionsDependsOn: ['filterOptions'],
 						},
-						// eslint-disable-next-line n8n-nodes-base/node-param-default-wrong-for-options
 						default: 'createdAt',
 						description:
 							'The sorting field (keywords/origin filters auto-apply their respective sorts). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
