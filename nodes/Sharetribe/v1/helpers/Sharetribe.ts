@@ -265,6 +265,7 @@ export {
 	buildResultOptions,
 	buildQueryContext,
 	validateValidUuid,
+	validateValidEmail,
 	addUserAttributesToQueryString,
 	getExtendedDataPrefix,
 	buildSparseFieldsList,
