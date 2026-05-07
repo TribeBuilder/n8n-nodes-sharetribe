@@ -97,7 +97,7 @@ export async function execute(
 			});
 			returnData.push(...result);
 		} catch (error) {
-			if (this.continueOnFail() || error.httpCode === '404') {
+			if (this.continueOnFail()) {
 				returnData.push({
 					json: { error: error.message },
 					pairedItem: { item: i },
