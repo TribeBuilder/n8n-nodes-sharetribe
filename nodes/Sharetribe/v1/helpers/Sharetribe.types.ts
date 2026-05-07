@@ -2126,6 +2126,14 @@ export interface ListingTypesAssetResponse {
 						name: string;
 						alias: string;
 					};
+					transactionFields?: Array<{
+						key: string;
+						label: string;
+						schemaType: string;
+						showTo?: 'customer' | 'provider';
+						enumOptions?: Array<{ option: string; label: string }>;
+						numberConfig?: { minimum?: number; maximum?: number };
+					}>;
 					defaultListingFields: IDataObject;
 				}>;
 			};
@@ -2191,8 +2199,9 @@ export interface ListingFieldsAssetResponse {
 }
 
 /**
- * User fields asset response from Sharetribe Asset Delivery API
- * Contains user field definitions (no filter indexing info)
+ * User fields asset response from Sharetribe Asset Delivery API.
+ * Mirrors the listing-fields shape — `filterConfig.indexForSearch` indicates
+ * the field has been flagged as searchable in the Sharetribe Console.
  */
 export interface UserFieldsAssetResponse {
 	data: Array<{
@@ -2203,9 +2212,14 @@ export interface UserFieldsAssetResponse {
 			data: {
 				userFields: Array<{
 					key: string;
-					scope: 'public' | 'private' | 'protected';
+					scope: 'public' | 'private' | 'protected' | 'metadata';
 					schemaType: string;
 					label: string;
+					filterConfig?: {
+						indexForSearch?: boolean;
+						group?: string;
+						showFilter?: boolean;
+					};
 					enumOptions?: Array<{ option: string; label: string }>;
 					saveConfig?: {
 						displayInSignUp?: boolean;

@@ -38,6 +38,7 @@ import {
 	getIndexedListingFieldsFromAsset,
 	getNumberFieldsFromListingAsset,
 	getNumberFieldsFromUserAsset,
+	getTransactionFieldsFromListingTypesAsset,
 	getUserFieldsFromAsset,
 	type Category,
 	type ListingTypesAssetResponse,
@@ -97,7 +98,7 @@ export async function getSortableMetadataAttributes(
 	const asset =
 		resource === 'listing' || resource === 'transaction'
 			? await getNumberFieldsFromListingAsset(this, 'metadata')
-			: await getNumberFieldsFromUserAsset(this, 'public'); // user metadata not in asset; fall through
+			: await getNumberFieldsFromUserAsset(this, 'metadata');
 	if (asset.fields.size === 0) {
 		return fieldsToOptions(new Set(), 'metadata.', filter);
 	}
@@ -154,6 +155,56 @@ export async function getMetadataAttributes(
 	filter?: string,
 ): Promise<INodeListSearchResult> {
 	const resource = this.getNodeParameter('resource', 0) as 'listing' | 'transaction' | 'user';
+
+	if (resource === 'listing') {
+		const assetData = await getIndexedListingFieldsFromAsset(this, 'metadata');
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'metadata',
+			undefined,
+			new Set(assetData.indexed.keys()),
+		);
+		// Console-indexed fields skip binary probes
+		for (const [fieldValue] of assetData.indexed) {
+			fields.add(fieldValue);
+		}
+		return fieldsToOptionsWithLabels(
+			fields,
+			'metadata.',
+			assetData.all,
+			filter,
+			undefined,
+			assetData.descriptions,
+		);
+	}
+
+	if (resource === 'user') {
+		const assetFields = await getUserFieldsFromAsset(this, 'metadata');
+		const preKnown = new Set<string>();
+		for (const field of assetFields.labels.keys()) {
+			if (!assetFields.indexed.has(field)) preKnown.add(field);
+		}
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'metadata',
+			preKnown,
+			new Set(assetFields.indexed.keys()),
+		);
+		for (const [fieldValue] of assetFields.indexed) {
+			fields.add(fieldValue);
+		}
+		return fieldsToOptionsWithLabels(
+			fields,
+			'metadata.',
+			assetFields.labels,
+			filter,
+			undefined,
+			assetFields.descriptions,
+		);
+	}
+
 	const fields = await discoverAndValidateFields(this, resource, 'metadata');
 	return fieldsToOptions(fields, 'metadata.', filter);
 }
@@ -170,10 +221,15 @@ export async function getPublicDataAttributes(
 		const assetData = await getIndexedListingFieldsFromAsset(this, 'public');
 		labelMap = assetData.all;
 
-		// Discovery + binary validation for live data fields
-		const fields = await discoverAndValidateFields(this, resource, 'publicData');
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'publicData',
+			undefined,
+			new Set(assetData.indexed.keys()),
+		);
 
-		// Add indexed asset fields directly — pre-validated, no binary search needed
+		// Console-indexed fields skip binary probes
 		for (const [fieldValue] of assetData.indexed) {
 			if (!predefinedFields.has(fieldValue)) {
 				fields.add(fieldValue);
@@ -189,13 +245,25 @@ export async function getPublicDataAttributes(
 			assetData.descriptions,
 		);
 	} else {
-		// User: asset provides field names but no filterability info
 		const assetFields = await getUserFieldsFromAsset(this, 'public');
 		labelMap = assetFields.labels;
 
-		// Pass asset field names as preKnownFields so they enter binary validation
-		const preKnown = new Set(assetFields.labels.keys());
-		const fields = await discoverAndValidateFields(this, resource, 'publicData', preKnown);
+		const preKnown = new Set<string>();
+		for (const field of assetFields.labels.keys()) {
+			if (!assetFields.indexed.has(field)) preKnown.add(field);
+		}
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'publicData',
+			preKnown,
+			new Set(assetFields.indexed.keys()),
+		);
+		for (const [fieldValue] of assetFields.indexed) {
+			if (!predefinedFields.has(fieldValue)) {
+				fields.add(fieldValue);
+			}
+		}
 
 		return fieldsToOptionsWithLabels(
 			fields,
@@ -216,9 +284,13 @@ export async function getPrivateDataAttributes(
 
 	if (resource === 'listing') {
 		const assetData = await getIndexedListingFieldsFromAsset(this, 'private');
-		const fields = await discoverAndValidateFields(this, resource, 'privateData');
-
-		// Add indexed asset fields directly — pre-validated
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'privateData',
+			undefined,
+			new Set(assetData.indexed.keys()),
+		);
 		for (const [fieldValue] of assetData.indexed) {
 			fields.add(fieldValue);
 		}
@@ -232,10 +304,21 @@ export async function getPrivateDataAttributes(
 			assetData.descriptions,
 		);
 	} else {
-		// User: asset provides field names for binary validation
 		const assetFields = await getUserFieldsFromAsset(this, 'private');
-		const preKnown = new Set(assetFields.labels.keys());
-		const fields = await discoverAndValidateFields(this, resource, 'privateData', preKnown);
+		const preKnown = new Set<string>();
+		for (const field of assetFields.labels.keys()) {
+			if (!assetFields.indexed.has(field)) preKnown.add(field);
+		}
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'privateData',
+			preKnown,
+			new Set(assetFields.indexed.keys()),
+		);
+		for (const [fieldValue] of assetFields.indexed) {
+			fields.add(fieldValue);
+		}
 
 		return fieldsToOptionsWithLabels(
 			fields,
@@ -253,8 +336,47 @@ export async function getProtectedDataAttributes(
 	filter?: string,
 ): Promise<INodeListSearchResult> {
 	const resource = this.getNodeParameter('resource', 0) as 'transaction' | 'user';
-	const fields = await discoverAndValidateFields(this, resource, 'protectedData');
-	return fieldsToOptions(fields, 'protectedData.', filter);
+
+	if (resource === 'user') {
+		const assetFields = await getUserFieldsFromAsset(this, 'protected');
+		const preKnown = new Set<string>();
+		for (const field of assetFields.labels.keys()) {
+			if (!assetFields.indexed.has(field)) preKnown.add(field);
+		}
+		const fields = await discoverAndValidateFields(
+			this,
+			resource,
+			'protectedData',
+			preKnown,
+			new Set(assetFields.indexed.keys()),
+		);
+		for (const [fieldValue] of assetFields.indexed) {
+			fields.add(fieldValue);
+		}
+		return fieldsToOptionsWithLabels(
+			fields,
+			'protectedData.',
+			assetFields.labels,
+			filter,
+			undefined,
+			assetFields.descriptions,
+		);
+	}
+
+	// Transaction: read transactionFields defined per listing type as preKnown for probing.
+	// Listing-type-defined transaction fields end up in protectedData but have no indexForSearch flag.
+	const txFields = await getTransactionFieldsFromListingTypesAsset(this);
+	const preKnown = new Set(txFields.labels.keys());
+	const fields = await discoverAndValidateFields(this, resource, 'protectedData', preKnown);
+
+	return fieldsToOptionsWithLabels(
+		fields,
+		'protectedData.',
+		txFields.labels,
+		filter,
+		undefined,
+		txFields.descriptions,
+	);
 }
 
 export async function getUserTypes(

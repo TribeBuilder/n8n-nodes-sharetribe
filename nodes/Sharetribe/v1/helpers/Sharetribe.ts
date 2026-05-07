@@ -405,6 +405,7 @@ export {
 	fetchTimeslotsAnonymously,
 	buildFieldDescription,
 	getIndexedListingFieldsFromAsset,
+	getTransactionFieldsFromListingTypesAsset,
 	getUserFieldsFromAsset,
 	discoverAndValidateFields,
 	validateFilterableFields,

@@ -48,6 +48,7 @@ import type {
 	Category,
 	ListingCategoriesAssetResponse,
 	ListingFieldsAssetResponse,
+	ListingTypesAssetResponse,
 	ResultMode,
 	ResultOptions,
 	OutputMode,
@@ -2955,39 +2956,90 @@ export async function getIndexedListingFieldsFromAsset(
 
 /**
  * Fetches user field definitions from the user-fields.json asset.
- * User fields don't have `indexForSearch`, so the asset only provides
- * known field names and labels — fields still need binary elimination
- * to confirm filterability.
+ * Fields with `filterConfig.indexForSearch === true` are returned in `indexed`
+ * and can skip binary elimination — Sharetribe Console has already declared
+ * them filterable. All matching fields appear in `labels` for dropdown display.
  *
  * @param context - n8n load options context
- * @param scope - The extended data scope to filter by
- * @returns Object with `labels` (field value to display label) and `descriptions` (schema type descriptions)
+ * @param scope - The user-field scope to filter by
+ * @returns Object with `indexed` (console-flagged filterable fields), `labels`
+ *   (all fields with display labels), and `descriptions` (schema type descriptions)
  */
 export async function getUserFieldsFromAsset(
 	context: ILoadOptionsFunctions,
-	scope: 'public' | 'private' | 'protected',
-): Promise<{ labels: Map<string, string>; descriptions: Map<string, string> }> {
+	scope: 'public' | 'private' | 'protected' | 'metadata',
+): Promise<{
+	indexed: Map<string, string>;
+	labels: Map<string, string>;
+	descriptions: Map<string, string>;
+}> {
 	try {
 		const response = await listSearchAssetCall<UserFieldsAssetResponse>(
 			context,
 			'users/user-fields.json',
 		);
 		const fields = response.data[0]?.attributes?.data?.userFields || [];
+		const indexed = new Map<string, string>();
 		const labels = new Map<string, string>();
 		const descriptions = new Map<string, string>();
 		const dataType =
-			scope === 'public' ? 'publicData' : scope === 'private' ? 'privateData' : 'protectedData';
+			scope === 'public'
+				? 'publicData'
+				: scope === 'private'
+					? 'privateData'
+					: scope === 'protected'
+						? 'protectedData'
+						: 'metadata';
 		for (const field of fields) {
 			if (field.scope === scope) {
 				const key = `${dataType}.${field.key}`;
 				labels.set(key, field.label);
 				const desc = buildFieldDescription(field.schemaType, field.enumOptions);
 				if (desc) descriptions.set(key, desc);
+				if (field.filterConfig?.indexForSearch) {
+					indexed.set(key, field.label);
+				}
+			}
+		}
+		return { indexed, labels, descriptions };
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to fetch user fields asset: ${error}`);
+		return { indexed: new Map(), labels: new Map(), descriptions: new Map() };
+	}
+}
+
+/**
+ * Reads transaction field definitions from the listing-types.json asset.
+ * Transaction fields are defined per listing type (collected from the buyer
+ * during checkout) and end up on `transaction.protectedData`. The asset has no
+ * `indexForSearch` flag for them — searchability must still be probed against
+ * actual transactions. Returns the union across all listing types, deduped by
+ * `protectedData.<key>`, with display labels and schema descriptions.
+ */
+export async function getTransactionFieldsFromListingTypesAsset(
+	context: ILoadOptionsFunctions,
+): Promise<{ labels: Map<string, string>; descriptions: Map<string, string> }> {
+	try {
+		const response = await listSearchAssetCall<ListingTypesAssetResponse>(
+			context,
+			'listings/listing-types.json',
+		);
+		const listingTypes = response.data[0]?.attributes?.data?.listingTypes || [];
+		const labels = new Map<string, string>();
+		const descriptions = new Map<string, string>();
+		for (const listingType of listingTypes) {
+			for (const field of listingType.transactionFields || []) {
+				const key = `protectedData.${field.key}`;
+				if (!labels.has(key)) {
+					labels.set(key, field.label);
+					const desc = buildFieldDescription(field.schemaType, field.enumOptions);
+					if (desc) descriptions.set(key, desc);
+				}
 			}
 		}
 		return { labels, descriptions };
 	} catch (error) {
-		context.logger.error(`[Sharetribe] Failed to fetch user fields asset: ${error}`);
+		context.logger.error(`[Sharetribe] Failed to fetch listing types asset: ${error}`);
 		return { labels: new Map(), descriptions: new Map() };
 	}
 }
@@ -3008,6 +3060,7 @@ export async function discoverAndValidateFields(
 	resourceType: 'listing' | 'transaction' | 'user',
 	scope: 'metadata' | 'publicData' | 'privateData' | 'protectedData',
 	preKnownFields?: Set<string>,
+	skipValidationFields?: Set<string>,
 ): Promise<Set<string>> {
 	const endpointMap = {
 		listing: 'listings/query',
@@ -3078,6 +3131,13 @@ export async function discoverAndValidateFields(
 		if (discovered.size > 0) {
 			// Exclude fields that have own filter in UI or known not filterable
 			const fieldsToValidate = new Set(discovered);
+
+			// Skip console-flagged fields — Sharetribe has already declared them filterable
+			if (skipValidationFields) {
+				for (const field of skipValidationFields) {
+					fieldsToValidate.delete(field);
+				}
+			}
 
 			if (resourceType === 'listing' && scope === 'publicData') {
 				fieldsToValidate.delete('publicData.listingType');
@@ -3417,7 +3477,7 @@ export async function getNumberFieldsFromListingAsset(
 
 export async function getNumberFieldsFromUserAsset(
 	context: ILoadOptionsFunctions,
-	scope: 'public' | 'private' | 'protected',
+	scope: 'public' | 'private' | 'protected' | 'metadata',
 ): Promise<{ fields: Set<string>; labels: Map<string, string> }> {
 	try {
 		const response = await listSearchAssetCall<UserFieldsAssetResponse>(
@@ -3428,7 +3488,13 @@ export async function getNumberFieldsFromUserAsset(
 		const fields = new Set<string>();
 		const labels = new Map<string, string>();
 		const dataType =
-			scope === 'public' ? 'publicData' : scope === 'private' ? 'privateData' : 'protectedData';
+			scope === 'public'
+				? 'publicData'
+				: scope === 'private'
+					? 'privateData'
+					: scope === 'protected'
+						? 'protectedData'
+						: 'metadata';
 		for (const field of allFields) {
 			if (field.scope === scope && field.schemaType === 'long') {
 				const key = `${dataType}.${field.key}`;
