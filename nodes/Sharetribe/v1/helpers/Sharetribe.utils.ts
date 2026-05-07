@@ -47,14 +47,18 @@ import type {
 	SharetribeResource,
 	Category,
 	ListingCategoriesAssetResponse,
+	ListingFieldsAssetResponse,
+	ListingTypesAssetResponse,
 	ResultMode,
 	ResultOptions,
 	OutputMode,
 	FetchedImage,
 	AssetDeliveryResponse,
+	SharetribeApiResponse,
 	TimeslotResponse,
+	UserFieldsAssetResponse,
 } from './Sharetribe.types';
-import { listSearchAssetCall } from './Sharetribe';
+import { listSearchApiCall, listSearchAssetCall } from './Sharetribe';
 import { getAnonymousMarketplaceToken, clearAnonymousMarketplaceToken, getMarketplaceApiBaseUrl, getAssetApiBaseUrl, getPublicMarketplaceClientId } from '../transport';
 
 export function normalizeGeolocation(
@@ -2889,3 +2893,776 @@ export async function fetchTimeslotsAnonymously(
 
 	throw new NodeOperationError(this.getNode(), 'Failed to retrieve timeslots after retry');
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * listSearch / loadOptions helpers
+ *
+ * The functions below back the public listSearch handlers in
+ * `methods/listSearch.ts`. They discover, validate, and normalize Sharetribe
+ * extended-data fields by reading marketplace assets and probing the
+ * Marketplace API.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Builds a human-readable description of a field's schema type for display in dropdowns.
+ * Uses marketplace terminology (e.g. "Dropdown", "Checkbox", "Number").
+ */
+export function buildFieldDescription(
+	schemaType?: string,
+	enumOptions?: Array<{ option: string; label: string }>,
+): string {
+	if (!schemaType) return '';
+	const typeLabels: Record<string, string> = {
+		text: 'Free text',
+		enum: 'Dropdown',
+		'multi-enum': 'Checkbox',
+		boolean: 'boolean',
+		long: 'Number',
+	};
+	const typeLabel = typeLabels[schemaType] || schemaType;
+	if ((schemaType === 'enum' || schemaType === 'multi-enum') && enumOptions?.length) {
+		const values = enumOptions.map((o) => o.label || o.option).join(', ');
+		return `${typeLabel}: ${values}`;
+	}
+	if (schemaType === 'boolean') return 'boolean: true, false';
+	return typeLabel;
+}
+
+/**
+ * Fetches listing field definitions from the listing-fields.json asset.
+ * Fields with `filterConfig.indexForSearch === true` are returned as `indexed`
+ * and can skip binary elimination. All matching fields are returned in `all`
+ * with their display labels for use in dropdown options.
+ *
+ * @param context - n8n load options context
+ * @param scope - The extended data scope to filter by
+ * @returns Object with `indexed` (pre-validated filterable fields), `all` (all fields with labels),
+ *   and `descriptions` (schema type descriptions for dropdown display)
+ */
+export async function getIndexedListingFieldsFromAsset(
+	context: ILoadOptionsFunctions,
+	scope: 'public' | 'private' | 'metadata',
+): Promise<{
+	indexed: Map<string, string>;
+	all: Map<string, string>;
+	descriptions: Map<string, string>;
+}> {
+	try {
+		const response = await listSearchAssetCall<ListingFieldsAssetResponse>(
+			context,
+			'listings/listing-fields.json',
+		);
+		const fields = response.data[0]?.attributes?.data?.listingFields || [];
+		const indexed = new Map<string, string>();
+		const all = new Map<string, string>();
+		const descriptions = new Map<string, string>();
+		const dataType =
+			scope === 'public' ? 'publicData' : scope === 'private' ? 'privateData' : 'metadata';
+		for (const field of fields) {
+			if (field.scope === scope) {
+				const key = `${dataType}.${field.key}`;
+				all.set(key, field.label);
+				const desc = buildFieldDescription(field.schemaType, field.enumOptions);
+				if (desc) descriptions.set(key, desc);
+				if (field.filterConfig?.indexForSearch) {
+					indexed.set(key, field.label);
+				}
+			}
+		}
+		return { indexed, all, descriptions };
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to fetch listing fields asset: ${error}`);
+		return { indexed: new Map(), all: new Map(), descriptions: new Map() };
+	}
+}
+
+/**
+ * Fetches user field definitions from the user-fields.json asset.
+ * Fields with `filterConfig.indexForSearch === true` are returned in `indexed`
+ * and can skip binary elimination — Sharetribe Console has already declared
+ * them filterable. All matching fields appear in `labels` for dropdown display.
+ *
+ * @param context - n8n load options context
+ * @param scope - The user-field scope to filter by
+ * @returns Object with `indexed` (console-flagged filterable fields), `labels`
+ *   (all fields with display labels), and `descriptions` (schema type descriptions)
+ */
+export async function getUserFieldsFromAsset(
+	context: ILoadOptionsFunctions,
+	scope: 'public' | 'private' | 'protected' | 'metadata',
+): Promise<{
+	indexed: Map<string, string>;
+	labels: Map<string, string>;
+	descriptions: Map<string, string>;
+}> {
+	try {
+		const response = await listSearchAssetCall<UserFieldsAssetResponse>(
+			context,
+			'users/user-fields.json',
+		);
+		const fields = response.data[0]?.attributes?.data?.userFields || [];
+		const indexed = new Map<string, string>();
+		const labels = new Map<string, string>();
+		const descriptions = new Map<string, string>();
+		const dataType =
+			scope === 'public'
+				? 'publicData'
+				: scope === 'private'
+					? 'privateData'
+					: scope === 'protected'
+						? 'protectedData'
+						: 'metadata';
+		for (const field of fields) {
+			if (field.scope === scope) {
+				const key = `${dataType}.${field.key}`;
+				labels.set(key, field.label);
+				const desc = buildFieldDescription(field.schemaType, field.enumOptions);
+				if (desc) descriptions.set(key, desc);
+				if (field.filterConfig?.indexForSearch) {
+					indexed.set(key, field.label);
+				}
+			}
+		}
+		return { indexed, labels, descriptions };
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to fetch user fields asset: ${error}`);
+		return { indexed: new Map(), labels: new Map(), descriptions: new Map() };
+	}
+}
+
+/**
+ * Reads transaction field definitions from the listing-types.json asset.
+ * Transaction fields are defined per listing type (collected from the buyer
+ * during checkout) and end up on `transaction.protectedData`. The asset has no
+ * `indexForSearch` flag for them — searchability must still be probed against
+ * actual transactions. Returns the union across all listing types, deduped by
+ * `protectedData.<key>`, with display labels and schema descriptions.
+ */
+export async function getTransactionFieldsFromListingTypesAsset(
+	context: ILoadOptionsFunctions,
+): Promise<{ labels: Map<string, string>; descriptions: Map<string, string> }> {
+	try {
+		const response = await listSearchAssetCall<ListingTypesAssetResponse>(
+			context,
+			'listings/listing-types.json',
+		);
+		const listingTypes = response.data[0]?.attributes?.data?.listingTypes || [];
+		const labels = new Map<string, string>();
+		const descriptions = new Map<string, string>();
+		for (const listingType of listingTypes) {
+			for (const field of listingType.transactionFields || []) {
+				const key = `protectedData.${field.key}`;
+				if (!labels.has(key)) {
+					labels.set(key, field.label);
+					const desc = buildFieldDescription(field.schemaType, field.enumOptions);
+					if (desc) descriptions.set(key, desc);
+				}
+			}
+		}
+		return { labels, descriptions };
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to fetch listing types asset: ${error}`);
+		return { labels: new Map(), descriptions: new Map() };
+	}
+}
+
+/**
+ * Queries recent resources to discover extended data field names, then validates
+ * which fields are actually filterable using binary elimination probes.
+ *
+ * @param context - n8n load options context
+ * @param resourceType - The resource type to query
+ * @param scope - The extended data scope to discover fields for
+ * @param preKnownFields - Optional set of field names from asset data to merge
+ *   into the discovered set before validation (catches fields not present in sampled resources)
+ * @returns Set of validated filterable field names
+ */
+export async function discoverAndValidateFields(
+	context: ILoadOptionsFunctions,
+	resourceType: 'listing' | 'transaction' | 'user',
+	scope: 'metadata' | 'publicData' | 'privateData' | 'protectedData',
+	preKnownFields?: Set<string>,
+	skipValidationFields?: Set<string>,
+): Promise<Set<string>> {
+	const endpointMap = {
+		listing: 'listings/query',
+		transaction: 'transactions/query',
+		user: 'users/query',
+	};
+
+	const endpoint = endpointMap[resourceType];
+
+	const sparseFields: IDataObject = {};
+
+	if (resourceType === 'listing') {
+		sparseFields['fields.listing'] = [scope];
+	} else if (resourceType === 'user') {
+		sparseFields['fields.user'] = [`profile.${scope}`];
+	} else if (resourceType === 'transaction') {
+		sparseFields['fields.transaction'] = [scope];
+	}
+
+	try {
+		const discoveryStart = Date.now();
+		context.logger.info(`[Sharetribe] Querying ${resourceType}s to discover ${scope} fields`);
+
+		const response = await listSearchApiCall<SharetribeApiResponse>(
+			context,
+			endpoint,
+			sparseFields,
+		);
+
+		context.logger.info(
+			`[Sharetribe] Discovery query for ${resourceType} ${scope} returned ${response.data?.length || 0} items (${Date.now() - discoveryStart}ms)`,
+		);
+
+		const data = response.data;
+		const discovered = new Set<string>();
+
+		// Discover fields from the resources
+		for (const item of data || []) {
+			const attributes = item.attributes as IDataObject;
+
+			const extendedData = (
+				resourceType === 'user'
+					? (attributes?.profile as IDataObject)?.[scope]
+					: attributes?.[scope]
+			) as IDataObject;
+
+			if (extendedData && typeof extendedData === 'object') {
+				for (const [key, value] of Object.entries(extendedData)) {
+					const fieldName = `${scope}.${key}`;
+					const dataType = Array.isArray(value) ? 'array' : typeof value;
+
+					// Only include filterable types (not arrays or objects)
+					if (dataType !== 'array' && dataType !== 'object') {
+						discovered.add(fieldName);
+					}
+				}
+			}
+		}
+
+		// Merge pre-known fields from asset data into discovered set
+		if (preKnownFields) {
+			for (const field of preKnownFields) {
+				discovered.add(field);
+			}
+		}
+
+		// Validate which fields can actually be filtered
+		if (discovered.size > 0) {
+			// Exclude fields that have own filter in UI or known not filterable
+			const fieldsToValidate = new Set(discovered);
+
+			// Skip console-flagged fields — Sharetribe has already declared them filterable
+			if (skipValidationFields) {
+				for (const field of skipValidationFields) {
+					fieldsToValidate.delete(field);
+				}
+			}
+
+			if (resourceType === 'listing' && scope === 'publicData') {
+				fieldsToValidate.delete('publicData.listingType');
+				fieldsToValidate.delete('publicData.categoryLevel1');
+				fieldsToValidate.delete('publicData.categoryLevel2');
+				fieldsToValidate.delete('publicData.categoryLevel3');
+			}
+
+			if (resourceType === 'user' && scope === 'publicData') {
+				fieldsToValidate.delete('publicData.userType');
+			}
+
+			if (resourceType === 'transaction' && scope === 'metadata') {
+				fieldsToValidate.delete('metadata.inquiryMessage');
+			}
+
+			const validated = await validateFilterableFields(
+				context,
+				resourceType,
+				scope,
+				fieldsToValidate,
+			);
+			context.logger.debug(
+				`[Sharetribe] Validated ${validated.size}/${discovered.size} ${scope} fields for ${resourceType}`,
+			);
+			return validated;
+		}
+
+		context.logger.debug(`[Sharetribe] No ${scope} fields found in ${resourceType}s`);
+		return new Set();
+	} catch (error) {
+		context.logger.error(
+			`[Sharetribe] Failed to discover ${scope} fields for ${resourceType}: ${error}`,
+		);
+		return new Set();
+	}
+}
+
+const MAX_CONCURRENT_PROBES = 6;
+
+/**
+ * Simple concurrency limiter for API probe calls.
+ * Limits the number of in-flight requests to prevent overwhelming the API.
+ */
+class Semaphore {
+	private queue: (() => void)[] = [];
+	private running = 0;
+
+	constructor(private maxConcurrency: number) {}
+
+	async acquire(): Promise<void> {
+		if (this.running < this.maxConcurrency) {
+			this.running++;
+			return;
+		}
+		return new Promise<void>((resolve) => {
+			this.queue.push(resolve);
+		});
+	}
+
+	release(): void {
+		this.running--;
+		const next = this.queue.shift();
+		if (next) {
+			this.running++;
+			next();
+		}
+	}
+}
+
+/**
+ * Binary elimination probe: recursively split fields and test to find valid ones
+ * This is much more efficient than testing each field individually.
+ * Uses a shared semaphore to limit concurrent API calls.
+ */
+async function binaryEliminationProbe(
+	context: ILoadOptionsFunctions,
+	endpoint: string,
+	fields: string[],
+	scope: string,
+	prefix: string,
+	semaphore: Semaphore,
+): Promise<Set<string>> {
+	if (fields.length === 0) return new Set();
+
+	// Base case: single field, test it
+	if (fields.length === 1) {
+		const field = fields[0];
+		const key = field.replace(`${scope}.`, '');
+		const impossibleValue = '___IMPOSSIBLE___';
+
+		await semaphore.acquire();
+		const start = Date.now();
+		try {
+			const response = await listSearchApiCall<SharetribeApiResponse>(context, endpoint, {
+				[`${prefix}${key}`]: impossibleValue,
+				pageSize: 1,
+			});
+			const data = response.data;
+			const dataLength = data.length;
+			const total = response.meta?.totalItems ?? dataLength;
+			const valid = total === 0;
+			context.logger.info(
+				`[Sharetribe] Probe single field ${prefix}${key} → ${valid ? 'valid' : 'invalid'} (${Date.now() - start}ms)`,
+			);
+			// 0 results = field is valid (impossible value filtered successfully)
+			return valid ? new Set([field]) : new Set();
+		} catch {
+			context.logger.info(
+				`[Sharetribe] Probe single field ${prefix}${key} → error (${Date.now() - start}ms)`,
+			);
+			return new Set();
+		} finally {
+			semaphore.release();
+		}
+	}
+
+	// Recursive case: split in half
+	const mid = Math.floor(fields.length / 2);
+	const leftHalf = fields.slice(0, mid);
+	const rightHalf = fields.slice(mid);
+
+	// Test left half with impossible values
+	const leftQs: IDataObject = { pageSize: 1 };
+	for (const field of leftHalf) {
+		const key = field.replace(`${scope}.`, '');
+		leftQs[`${prefix}${key}`] = '___IMPOSSIBLE___';
+	}
+
+	// Test right half with impossible values
+	const rightQs: IDataObject = { pageSize: 1 };
+	for (const field of rightHalf) {
+		const key = field.replace(`${scope}.`, '');
+		rightQs[`${prefix}${key}`] = '___IMPOSSIBLE___';
+	}
+
+	const probeWithSemaphore = async (
+		label: string,
+		qs: IDataObject,
+	): Promise<SharetribeApiResponse> => {
+		await semaphore.acquire();
+		const start = Date.now();
+		try {
+			const response = await listSearchApiCall<SharetribeApiResponse>(context, endpoint, qs);
+			const total = response.meta?.totalItems ?? response.data.length;
+			context.logger.info(
+				`[Sharetribe] Probe ${label} (${fields.length} fields) → ${total} results (${Date.now() - start}ms)`,
+			);
+			return response;
+		} catch {
+			context.logger.info(
+				`[Sharetribe] Probe ${label} (${fields.length} fields) → error (${Date.now() - start}ms)`,
+			);
+			return { data: [], meta: { totalItems: 1 } } as SharetribeApiResponse;
+		} finally {
+			semaphore.release();
+		}
+	};
+
+	const [leftResponse, rightResponse] = await Promise.all([
+		probeWithSemaphore('left', leftQs),
+		probeWithSemaphore('right', rightQs),
+	]);
+
+	const leftData = leftResponse.data;
+	const leftDataLength = leftData.length;
+	const leftTotal = leftResponse.meta?.totalItems ?? leftDataLength;
+
+	const rightData = rightResponse.data;
+	const rightDataLength = rightData.length;
+	const rightTotal = rightResponse.meta?.totalItems ?? rightDataLength;
+
+	const validFields = new Set<string>();
+
+	// Recursively probe halves that returned 0 (meaning they have valid fields)
+	// Run both branches concurrently when both need recursion
+	const recursivePromises: Promise<Set<string>>[] = [];
+	if (leftTotal === 0) {
+		recursivePromises.push(
+			binaryEliminationProbe(context, endpoint, leftHalf, scope, prefix, semaphore),
+		);
+	}
+	if (rightTotal === 0) {
+		recursivePromises.push(
+			binaryEliminationProbe(context, endpoint, rightHalf, scope, prefix, semaphore),
+		);
+	}
+
+	const results = await Promise.all(recursivePromises);
+	for (const resultSet of results) {
+		resultSet.forEach((k) => validFields.add(k));
+	}
+
+	return validFields;
+}
+
+/**
+ * Validates which fields can actually be filtered using binary elimination.
+ * Creates a semaphore-limited probe session and delegates to binaryEliminationProbe.
+ *
+ * @param context - n8n load options context
+ * @param resourceType - The resource type to validate against
+ * @param scope - The extended data scope
+ * @param fields - Set of candidate field names to validate
+ * @returns Set of validated filterable field names
+ */
+export async function validateFilterableFields(
+	context: ILoadOptionsFunctions,
+	resourceType: 'listing' | 'transaction' | 'user',
+	scope: string,
+	fields: Set<string>,
+): Promise<Set<string>> {
+	if (fields.size === 0) return new Set();
+
+	const endpointMap = {
+		listing: 'listings/query',
+		transaction: 'transactions/query',
+		user: 'users/query',
+	};
+
+	const endpoint = endpointMap[resourceType];
+
+	const prefixMap: Record<string, string> = {
+		metadata: 'meta_',
+		publicData: 'pub_',
+		privateData: 'priv_',
+		protectedData: 'prot_',
+	};
+
+	const prefix = prefixMap[scope];
+
+	try {
+		context.logger.info(
+			`[Sharetribe] Binary elimination starting for ${fields.size} ${resourceType} ${scope} fields (max ${MAX_CONCURRENT_PROBES} concurrent)`,
+		);
+
+		// Use binary elimination to efficiently find valid fields
+		const semaphore = new Semaphore(MAX_CONCURRENT_PROBES);
+		const overallStart = Date.now();
+		const validatedFields = await binaryEliminationProbe(
+			context,
+			endpoint,
+			Array.from(fields),
+			scope,
+			prefix,
+			semaphore,
+		);
+
+		context.logger.info(
+			`[Sharetribe] Binary elimination complete: ${validatedFields.size}/${fields.size} valid fields in ${Date.now() - overallStart}ms`,
+		);
+
+		return validatedFields;
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Binary elimination failed: ${error}`);
+		return new Set();
+	}
+}
+
+// Discover transaction process information (processes, states, transitions) from actual transactions
+export async function discoverTransactionProcessInfo(
+	context: ILoadOptionsFunctions,
+	type: 'processes' | 'states' | 'transitions',
+): Promise<Set<string>> {
+	// Use sparse fields to only get what we need for efficiency
+	const fieldMap = {
+		processes: ['processName'],
+		states: ['state'],
+		transitions: ['transitions'],
+	};
+
+	const fields = fieldMap[type];
+
+	try {
+		context.logger.debug(`[Sharetribe] Querying transactions to discover ${type}`);
+
+		const response = await listSearchApiCall<SharetribeApiResponse>(context, 'transactions/query', {
+			'fields.transaction': fields,
+		});
+
+		const discovered = new Set<string>();
+
+		for (const item of response.data) {
+			const attributes = item.attributes as IDataObject | undefined;
+			if (!attributes) continue;
+
+			if (type === 'processes') {
+				const processName = attributes.processName as string;
+				if (processName) discovered.add(processName);
+			} else if (type === 'states') {
+				const state = attributes.state as string;
+				if (state) discovered.add(state);
+			} else if (type === 'transitions') {
+				const transitions = attributes.transitions as IDataObject[];
+				if (transitions) {
+					for (const transition of transitions) {
+						const transitionName = transition.transition as string;
+						if (transitionName) discovered.add(transitionName);
+					}
+				}
+			}
+		}
+
+		context.logger.debug(`[Sharetribe] Discovered ${discovered.size} ${type} from transactions`);
+		return discovered;
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to discover ${type} from transactions: ${error}`);
+		return new Set();
+	}
+}
+export async function getNumberFieldsFromListingAsset(
+	context: ILoadOptionsFunctions,
+	scope: 'public' | 'private' | 'metadata',
+): Promise<{ fields: Set<string>; labels: Map<string, string> }> {
+	try {
+		const response = await listSearchAssetCall<ListingFieldsAssetResponse>(
+			context,
+			'listings/listing-fields.json',
+		);
+		const allFields = response.data[0]?.attributes?.data?.listingFields || [];
+		const fields = new Set<string>();
+		const labels = new Map<string, string>();
+		const dataType =
+			scope === 'public' ? 'publicData' : scope === 'private' ? 'privateData' : 'metadata';
+		for (const field of allFields) {
+			if (field.scope === scope && field.schemaType === 'long') {
+				const key = `${dataType}.${field.key}`;
+				fields.add(key);
+				labels.set(key, field.label);
+			}
+		}
+		return { fields, labels };
+	} catch {
+		return { fields: new Set(), labels: new Map() };
+	}
+}
+
+export async function getNumberFieldsFromUserAsset(
+	context: ILoadOptionsFunctions,
+	scope: 'public' | 'private' | 'protected' | 'metadata',
+): Promise<{ fields: Set<string>; labels: Map<string, string> }> {
+	try {
+		const response = await listSearchAssetCall<UserFieldsAssetResponse>(
+			context,
+			'users/user-fields.json',
+		);
+		const allFields = response.data[0]?.attributes?.data?.userFields || [];
+		const fields = new Set<string>();
+		const labels = new Map<string, string>();
+		const dataType =
+			scope === 'public'
+				? 'publicData'
+				: scope === 'private'
+					? 'privateData'
+					: scope === 'protected'
+						? 'protectedData'
+						: 'metadata';
+		for (const field of allFields) {
+			if (field.scope === scope && field.schemaType === 'long') {
+				const key = `${dataType}.${field.key}`;
+				fields.add(key);
+				labels.set(key, field.label);
+			}
+		}
+		return { fields, labels };
+	} catch {
+		return { fields: new Set(), labels: new Map() };
+	}
+}
+// Helper to recursively extract all field paths from an object in dot notation
+export function extractFieldPaths(obj: IDataObject, prefix = ''): string[] {
+	return Object.keys(obj).reduce((acc, key) => {
+		const pre = prefix.length ? `${prefix}.` : '';
+		const currentPath = pre + key;
+
+		// Always add the current path
+		acc.push(currentPath);
+
+		// If value is a nested object (not array, not null), recurse into it
+		if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+			acc.push(...extractFieldPaths(obj[key] as IDataObject, currentPath));
+		}
+
+		return acc;
+	}, [] as string[]);
+}
+
+// Discover user extended data fields without validation (for deletion)
+export async function discoverUserExtendedDataFields(
+	context: ILoadOptionsFunctions,
+	scope: 'metadata' | 'publicData' | 'privateData' | 'protectedData',
+): Promise<Set<string>> {
+	const sparseFields: IDataObject = {
+		'fields.user': [`profile.${scope}`],
+		perPage: 100,
+		include: [],
+	};
+
+	try {
+		const response = await listSearchApiCall<SharetribeApiResponse>(
+			context,
+			'users/query',
+			sparseFields,
+		);
+
+		const discovered = new Set<string>();
+
+		for (const item of response.data || []) {
+			const attributes = item.attributes as IDataObject;
+			const extendedData = (attributes?.profile as IDataObject)?.[scope] as IDataObject;
+
+			if (extendedData && typeof extendedData === 'object') {
+				const fieldPaths = extractFieldPaths(extendedData);
+				for (const path of fieldPaths) {
+					discovered.add(`${scope}.${path}`);
+				}
+			}
+		}
+
+		return discovered;
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to discover ${scope} fields: ${error}`);
+		return new Set();
+	}
+}
+
+
+// Discover listing extended data fields without validation (for deletion)
+export async function discoverListingExtendedDataFields(
+	context: ILoadOptionsFunctions,
+	scope: 'metadata' | 'publicData' | 'privateData',
+): Promise<Set<string>> {
+	const sparseFields: IDataObject = {
+		'fields.listing': [scope],
+		perPage: 100,
+		include: [],
+	};
+
+	try {
+		const response = await listSearchApiCall<SharetribeApiResponse>(
+			context,
+			'listings/query',
+			sparseFields,
+		);
+
+		const discovered = new Set<string>();
+
+		for (const item of response.data || []) {
+			const attributes = item.attributes as IDataObject;
+			const extendedData = attributes?.[scope] as IDataObject;
+
+			if (extendedData && typeof extendedData === 'object') {
+				const fieldPaths = extractFieldPaths(extendedData);
+				for (const path of fieldPaths) {
+					discovered.add(`${scope}.${path}`);
+				}
+			}
+		}
+
+		return discovered;
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to discover listing ${scope} fields: ${error}`);
+		return new Set();
+	}
+}
+
+
+// Discover transaction extended data fields without validation (for deletion)
+export async function discoverTransactionExtendedDataFields(
+	context: ILoadOptionsFunctions,
+	scope: 'metadata' | 'protectedData',
+): Promise<Set<string>> {
+	const sparseFields: IDataObject = {
+		'fields.transaction': [scope],
+		perPage: 100,
+		include: [],
+	};
+
+	try {
+		const response = await listSearchApiCall<SharetribeApiResponse>(
+			context,
+			'transactions/query',
+			sparseFields,
+		);
+
+		const discovered = new Set<string>();
+
+		for (const item of response.data || []) {
+			const attributes = item.attributes as IDataObject;
+			const extendedData = attributes?.[scope] as IDataObject;
+
+			if (extendedData && typeof extendedData === 'object') {
+				const fieldPaths = extractFieldPaths(extendedData);
+				for (const path of fieldPaths) {
+					discovered.add(`${scope}.${path}`);
+				}
+			}
+		}
+
+		return discovered;
+	} catch (error) {
+		context.logger.error(`[Sharetribe] Failed to discover transaction ${scope} fields: ${error}`);
+		return new Set();
+	}
+}
+
