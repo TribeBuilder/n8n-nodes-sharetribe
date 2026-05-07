@@ -403,6 +403,18 @@ export {
 	fetchSitemapAnonymously,
 	fetchPublicAssets,
 	fetchTimeslotsAnonymously,
+	buildFieldDescription,
+	getIndexedListingFieldsFromAsset,
+	getUserFieldsFromAsset,
+	discoverAndValidateFields,
+	validateFilterableFields,
+	discoverTransactionProcessInfo,
+	getNumberFieldsFromListingAsset,
+	getNumberFieldsFromUserAsset,
+	extractFieldPaths,
+	discoverUserExtendedDataFields,
+	discoverListingExtendedDataFields,
+	discoverTransactionExtendedDataFields,
 } from './Sharetribe.utils';
 
 export * from './sharedDescriptions';
