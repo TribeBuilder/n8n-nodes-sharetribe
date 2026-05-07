@@ -857,6 +857,7 @@ export const UI_OPERATIONS = {
 	UPDATE_PROFILE: 'updateProfile',
 	UPDATE_STOCK_QUANTITY: 'updateStockQuantity',
 	UPLOAD: 'upload',
+	VERIFY_EMAIL: 'verifyEmail',
 } as const;
 
 export type UiOperation = (typeof UI_OPERATIONS)[keyof typeof UI_OPERATIONS];
@@ -870,6 +871,7 @@ export const ENDPOINTS = {
 	USERS_UPDATE_PROFILE: 'users/update_profile',
 	USERS_APPROVE: 'users/approve',
 	USERS_UPDATE_PERMISSIONS: 'users/update_permissions',
+	USERS_VERIFY_EMAIL: 'users/verify_email',
 	LISTINGS_GET: 'listings/show',
 	LISTINGS_QUERY: 'listings/query',
 	LISTINGS_CREATE: 'listings/create',

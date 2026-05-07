@@ -5,8 +5,9 @@ import * as updateProfile from './update';
 import * as updatePermissions from './updatePermissions';
 import * as approveUser from './approve';
 import * as getMany from './getMany';
+import * as verifyEmail from './verifyEmail';
 
-export { get, updateProfile, updatePermissions, approveUser, getMany };
+export { get, updateProfile, updatePermissions, approveUser, getMany, verifyEmail };
 
 export const descriptions: INodeProperties[] = [
 	{
@@ -50,6 +51,12 @@ export const descriptions: INodeProperties[] = [
 				description: "Update user's permissions",
 				action: 'Update user permissions',
 			},
+			{
+				name: 'Verify Email',
+				value: 'verifyEmail',
+				description: "Mark a user's email address as verified",
+				action: 'Verify a user email',
+			},
 		],
 		default: 'get',
 	},
@@ -59,4 +66,5 @@ export const descriptions: INodeProperties[] = [
 	...updateProfile.description,
 	...updatePermissions.description,
 	...approveUser.description,
+	...verifyEmail.description,
 ];
