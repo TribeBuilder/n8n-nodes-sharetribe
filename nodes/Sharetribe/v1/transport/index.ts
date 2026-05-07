@@ -498,6 +498,9 @@ export function handleSharetribeError(
 			} else {
 				errorMessage = `The current stock quantity did not match (expected ${oldTotal}). Fetch the current stock quantity and retry the operation.`;
 			}
+		} else if (endpoint === 'users/verify_email' && primaryError.code === 'conflict') {
+			const submittedEmail = typeof body?.email === 'string' ? body.email : 'submitted email';
+			errorMessage = `Email "${submittedEmail}" doesn't match the user's primary 'email' or 'pendingEmail'.`;
 		} else if (primaryError.status === 404 || statusCode === 404) {
 			const { resourceType, resourceId } = extractResourceInfo(endpoint, body, query);
 			const onCredential = credentialName ? ` on "${credentialName}"` : '';

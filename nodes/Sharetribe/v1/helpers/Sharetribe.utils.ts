@@ -1993,6 +1993,28 @@ export function validateValidUuid(
 	});
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Validates that a string looks like an email address. Throws a NodeOperationError
+ * with the supplied field label when invalid; returns null when valid.
+ */
+export function validateValidEmail(
+	context: IExecuteFunctions,
+	itemIndex: number,
+	email: string,
+	fieldLabel = 'email address',
+): null | NodeOperationError {
+	if (typeof email === 'string' && EMAIL_REGEX.test(email.trim())) {
+		return null;
+	}
+
+	throw new NodeOperationError(context.getNode(), `Invalid ${fieldLabel}`, {
+		description: `'${email}' is not a valid email address`,
+		itemIndex: itemIndex,
+	});
+}
+
 /**
  * Shared extended data field definitions used across all resources (listings, users, transactions)
  */

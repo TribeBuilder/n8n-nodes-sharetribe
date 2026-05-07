@@ -52,7 +52,7 @@ Polls for events from your Sharetribe marketplace:
 | Marketplace            | Get Name                                                                                             |
 | Stock                  | Get Adjustments, Get Reservation, Update Quantity                                                    |
 | Transaction            | Get, Get Many, Transition, Transition Speculative, Update                                            |
-| User                   | Approve, Get, Get Many, Update, Update Permissions                                                   |
+| User                   | Approve, Get, Get Many, Update, Update Permissions, Verify Email                                     |
 
 Assets are marketplace configuration files stored on Sharetribe's CDN, fetchable by alias (`latest`) or specific version ID.
 
@@ -70,7 +70,7 @@ Create new credentials of type **Sharetribe Integration API** in n8n:
 
 - **Minimum n8n version**: 1.0.0
 - **Tested with**: n8n versions 1.0.0+
-- **Sharetribe API**: Compatible with Sharetribe Integration API v2026-03-25
+- **Sharetribe API**: Compatible with Sharetribe Integration API v2026-05-06
 
 ## Usage
 
