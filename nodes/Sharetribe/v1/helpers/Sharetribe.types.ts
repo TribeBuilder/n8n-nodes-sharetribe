@@ -2057,6 +2057,7 @@ export const RESOURCE_DEFAULTS: Record<string, readonly string[]> = {
 		'emailVerified',
 		'firstName',
 		'lastName',
+		'pendingEmail',
 		'state',
 		'userType', // Flattened from publicData.userType
 	],
