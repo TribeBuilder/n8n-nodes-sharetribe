@@ -190,7 +190,7 @@ function cleanProp(schema: unknown): unknown {
 // ── Resource → operation mapping ───────────────────────────────────
 
 const resourceMappings: Record<string, { type: string; operations: string[] }> = {
-	user: { type: 'User', operations: ['get', 'getMany'] },
+	user: { type: 'User', operations: ['get', 'getMany', 'verifyEmail'] },
 	listing: { type: 'Listing', operations: ['get', 'getMany', 'create', 'update'] },
 	transaction: { type: 'Transaction', operations: ['get', 'getMany'] },
 	stock: { type: 'Stock', operations: ['getMany', 'adjustQuantity', 'updateStockQuantity'] },
