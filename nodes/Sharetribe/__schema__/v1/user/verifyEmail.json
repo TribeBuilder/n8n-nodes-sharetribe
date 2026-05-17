@@ -1,0 +1,134 @@
+{
+	"type": "object",
+	"properties": {
+		"id": {
+			"type": "string"
+		},
+		"type": {
+			"type": "string",
+			"const": "user"
+		},
+		"banned": {
+			"type": "boolean"
+		},
+		"deleted": {
+			"type": "boolean"
+		},
+		"state": {
+			"type": "string"
+		},
+		"createdAt": {
+			"type": "string"
+		},
+		"email": {
+			"type": "string"
+		},
+		"emailVerified": {
+			"type": "boolean"
+		},
+		"pendingEmail": {
+			"type": "string"
+		},
+		"stripeConnected": {
+			"type": "boolean"
+		},
+		"identityProviders": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"idpId": {
+						"type": "string"
+					},
+					"userId": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"profile": {
+			"type": "object",
+			"properties": {
+				"firstName": {
+					"type": "string"
+				},
+				"lastName": {
+					"type": "string"
+				},
+				"displayName": {
+					"type": "string"
+				},
+				"abbreviatedName": {
+					"type": "string"
+				},
+				"bio": {
+					"type": "string"
+				},
+				"metadata": {
+					"type": "object"
+				},
+				"publicData": {
+					"type": "object"
+				},
+				"protectedData": {
+					"type": "object"
+				},
+				"privateData": {
+					"type": "object"
+				}
+			}
+		},
+		"metadata": {
+			"type": "object"
+		},
+		"marketplace": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "marketplace"
+				}
+			}
+		},
+		"profileImage": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "image"
+				}
+			}
+		},
+		"stripeAccount": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "stripeAccount"
+				}
+			}
+		},
+		"effectivePermissionSet": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string",
+					"const": "permissionSet"
+				}
+			}
+		}
+	},
+	"version": 1
+}

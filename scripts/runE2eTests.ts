@@ -66,6 +66,8 @@ interface Config {
 		listingId: string;
 		transactionId: string;
 		pendingUserId: string;
+		unverifiedUserId: string;
+		unverifiedUserEmail: string;
 		stockReservationId?: string;
 		closedListingId?: string;
 		purchaseListingId?: string;
@@ -812,6 +814,26 @@ async function setupFixtures(config: Config): Promise<void> {
 		console.log(`  Using configured pendingUserId: ${config.fixtures.pendingUserId}`);
 	}
 
+	// Create a fresh unverified user for the user/verifyEmail workflow.
+	// emailVerified can never be flipped back to false once verified, so we always
+	// sign up a brand-new user with a unique email instead of reusing one.
+	console.log('  Creating unverified user for verifyEmail test...');
+	const unverifiedEmail = `e2e-verify-${Date.now()}@test.example.com`;
+	const unverifiedUserConfig: TestUserConfig = {
+		email: unverifiedEmail,
+		password: 'Test1234!',
+		firstName: 'E2E',
+		lastName: 'VerifyEmail',
+	};
+	config.fixtures.unverifiedUserId = await createUser(
+		unverifiedUserConfig,
+		anonymousToken,
+		integrationToken,
+		config,
+	);
+	config.fixtures.unverifiedUserEmail = unverifiedEmail;
+	console.log(`  Created unverified user: ${config.fixtures.unverifiedUserId} (${unverifiedEmail})`);
+
 	// Create listing as pendingApproval — the listing/approve workflow will publish it
 	if (!config.fixtures.listingId) {
 		console.log('  Creating test negotiation listing (pendingApproval)...');
@@ -951,6 +973,8 @@ function replacePlaceholders(
 		'{{FIXTURE_LISTING_ID}}': config.fixtures.listingId,
 		'{{FIXTURE_TRANSACTION_ID}}': config.fixtures.transactionId,
 		'{{FIXTURE_PENDING_USER_ID}}': config.fixtures.pendingUserId,
+		'{{FIXTURE_UNVERIFIED_USER_ID}}': config.fixtures.unverifiedUserId,
+		'{{FIXTURE_UNVERIFIED_USER_EMAIL}}': config.fixtures.unverifiedUserEmail,
 		'{{FIXTURE_STOCK_RESERVATION_ID}}': config.fixtures.stockReservationId ?? '',
 		'{{FIXTURE_CLOSED_LISTING_ID}}': config.fixtures.closedListingId ?? '',
 		'{{MARKETPLACE_INITIAL_TRANSITION}}': config.marketplace.negotiationInitialTransition,

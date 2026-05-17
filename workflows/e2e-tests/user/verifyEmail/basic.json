@@ -1,0 +1,112 @@
+{
+	"id": "e2e-user-verify-email",
+	"name": "[E2E] User - Verify Email",
+	"active": false,
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"tags": [
+		{
+			"name": "e2e"
+		},
+		{
+			"name": "sharetribe"
+		},
+		{
+			"name": "user"
+		}
+	],
+	"nodes": [
+		{
+			"id": "sticky-user-verify-email",
+			"name": "Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				120
+			],
+			"parameters": {
+				"content": "## User - Verify Email\n\nTests marking a user's email as verified.\n\n**Input:** `FIXTURE_UNVERIFIED_USER_ID` and `FIXTURE_UNVERIFIED_USER_EMAIL` — the runner signs up a brand-new user with a unique email for each run, because `emailVerified` can never flip back to `false` once it's `true`.\n\n**Steps:**\n1. Manual trigger\n2. POST users/verify_email with the fresh user's id and primary email\n\n**Expected output:** User object with `emailVerified: true` — proving the actual flip from `false` → `true`.",
+				"color": 4
+			}
+		},
+		{
+			"id": "trigger-user-verify-email",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [
+				240,
+				300
+			],
+			"parameters": {}
+		},
+		{
+			"id": "sharetribe-user-verify-email",
+			"name": "Verify Email",
+			"type": "CUSTOM.sharetribe",
+			"typeVersion": 1,
+			"position": [
+				460,
+				300
+			],
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "sharetribe-e2e",
+					"name": "Sharetribe E2E"
+				}
+			},
+			"parameters": {
+				"resource": "user",
+				"operation": "verifyEmail",
+				"userId": "{{FIXTURE_UNVERIFIED_USER_ID}}",
+				"userEmail": "{{FIXTURE_UNVERIFIED_USER_EMAIL}}"
+			}
+		},
+		{
+			"id": "step-note-trigger",
+			"name": "Step 1",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				240,
+				460
+			],
+			"parameters": {
+				"content": "**Step 1:** Manual trigger starts the workflow",
+				"width": 220,
+				"height": 100
+			}
+		},
+		{
+			"id": "step-note-verify-email",
+			"name": "Step 2",
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [
+				460,
+				460
+			],
+			"parameters": {
+				"content": "**Step 2:** Marks the freshly-signed-up user's email as verified — flips `emailVerified` from `false` to `true`.",
+				"width": 280,
+				"height": 100
+			}
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Verify Email",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {}
+}

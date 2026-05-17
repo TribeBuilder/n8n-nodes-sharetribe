@@ -10,11 +10,23 @@ import {
 } from '../../../helpers/Sharetribe';
 
 export const verifyEmailDescription: UserProperties = [
+	{
+		displayName:
+			'Available in DEV and TEST <a href="https://www.sharetribe.com/docs/concepts/sharetribe-environments/">environments</a>. For LIVE environments an <a href="https://www.sharetribe.com/docs/how-to/emails-and-notifications/set-up-outgoing-email-settings/#using-your-own-sendgrid-account">own Sendgrid account</a> must be in use. <a href="https://www.sharetribe.com/api-reference/integration.html#verify-email-address">Learn more</a>.',
+		name: 'notice',
+		type: 'notice',
+		displayOptions: {
+			show: {
+				resource: [UI_RESOURCES.USER],
+				operation: [UI_OPERATIONS.VERIFY_EMAIL],
+			},
+		},
+		default: '',
+	},
 	makeResourceIdField(UI_RESOURCES.USER, UI_OPERATIONS.VERIFY_EMAIL, {
 		displayName: 'User ID',
 		name: 'userId',
-		description:
-			"Mark a user's email address as verified without requiring them to click the verification link.",
+		description: "User's UUID",
 	}),
 	{
 		displayName: 'Email Address',
@@ -30,7 +42,7 @@ export const verifyEmailDescription: UserProperties = [
 		default: '',
 		placeholder: 'e.g. user@example.com',
 		description:
-			"Email address to verify. Must match the user's primary <code>email</code> or <code>pendingEmail</code> (case-insensitive).",
+			"Email address to verify. Must match the user's primary 'email' or 'pendingEmail' (case-insensitive).",
 	},
 	makeSimplifyField(UI_RESOURCES.USER, UI_OPERATIONS.VERIFY_EMAIL),
 	makeFieldsToReturnField(UI_RESOURCES.USER, UI_OPERATIONS.VERIFY_EMAIL, {
