@@ -26,6 +26,7 @@ export class SharetribeV1 implements INodeType {
 
 	methods = { listSearch, loadOptions, credentialTest };
 
+	// eslint-disable-next-line @n8n/community-nodes/require-continue-on-fail -- per-item handling lives in each action's execute.ts.
 	async execute(this: IExecuteFunctions) {
 		return await router.call(this);
 	}
