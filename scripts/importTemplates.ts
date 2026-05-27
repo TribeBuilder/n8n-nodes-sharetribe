@@ -10,6 +10,10 @@
  * Run via `npm run import:templates`. Uses the same n8n CLI as `npm run n8n`.
  */
 
+/* eslint-disable @n8n/community-nodes/no-restricted-imports */
+/* eslint-disable @n8n/community-nodes/no-restricted-globals */
+/* eslint-disable no-console */
+
 import { execSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
