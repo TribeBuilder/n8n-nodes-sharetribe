@@ -9,6 +9,7 @@ import type {
 
 export class SharetribeOAuth2Api implements ICredentialType {
 	name = 'sharetribeOAuth2Api';
+	// eslint-disable-next-line @n8n/community-nodes/cred-class-oauth2-naming
 	displayName = 'Sharetribe Integration API';
 	description = 'Sharetribe Integration API';
 	documentationUrl =

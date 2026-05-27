@@ -6,7 +6,7 @@ import type {
 	IBinaryData,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { handleSharetribeError } from '../../../transport';
 import { generateExecutionSummary, fetchExternalImageFromUrl } from '../../../helpers/Sharetribe';
 
@@ -109,7 +109,7 @@ export async function execute(
 			if (error && typeof error === 'object') {
 				handleSharetribeError.call(this, error as JsonObject, 'images/upload');
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 	}
 

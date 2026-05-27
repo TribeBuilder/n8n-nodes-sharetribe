@@ -142,6 +142,7 @@ async function validateMarketplaceClientId(
 				},
 			});
 		} catch (error) {
+			// eslint-disable-next-line @n8n/community-nodes/require-node-api-error
 			throw new CredentialTestError(
 				`Failed to fetch marketplace URL: ${error.message || 'Network error'}`,
 			);
@@ -179,6 +180,7 @@ async function validateMarketplaceClientId(
 			json: true,
 		});
 	} catch {
+		// eslint-disable-next-line @n8n/community-nodes/require-node-api-error
 		throw new CredentialTestError(
 			`Marketplace API Client ID is not valid. The auth endpoint rejected it. Please check your ${proPlan ? 'marketplace URL' : 'Marketplace API Client ID'}.`,
 		);

@@ -1,5 +1,5 @@
-import type { IExecuteFunctions, INodeExecutionData, IDataObject } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData, IDataObject, JsonObject } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { DateTime } from 'luxon';
 import { fetchPublicAssets, fetchTimeslotsAnonymously } from '../../../helpers/Sharetribe';
 import { TimeslotQueryBuilder } from './Builder';
@@ -35,6 +35,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				}
 			} catch (error) {
 				if (error instanceof NodeOperationError) {
+					// eslint-disable-next-line @n8n/community-nodes/require-node-api-error
 					throw error;
 				}
 				// If the asset check fails for other reasons, let the timeslot request proceed
@@ -96,7 +97,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				returnData.push({ json: { error: error.message }, pairedItem: { item: i } });
 				continue;
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 	}
 

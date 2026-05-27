@@ -59,7 +59,13 @@ import type {
 	UserFieldsAssetResponse,
 } from './Sharetribe.types';
 import { listSearchApiCall, listSearchAssetCall } from './Sharetribe';
-import { getAnonymousMarketplaceToken, clearAnonymousMarketplaceToken, getMarketplaceApiBaseUrl, getAssetApiBaseUrl, getPublicMarketplaceClientId } from '../transport';
+import {
+	getAnonymousMarketplaceToken,
+	clearAnonymousMarketplaceToken,
+	getMarketplaceApiBaseUrl,
+	getAssetApiBaseUrl,
+	getPublicMarketplaceClientId,
+} from '../transport';
 
 export function normalizeGeolocation(
 	geolocation: unknown,
@@ -264,6 +270,7 @@ export function parseJsonFields(fields: IDataObject, jsonFieldNames: string[]): 
 			try {
 				parsed[fieldName] = JSON.parse(fieldValue);
 			} catch (error) {
+				// eslint-disable-next-line @n8n/community-nodes/require-node-api-error
 				throw new Error(
 					`Invalid JSON in field "${fieldName}": ${error instanceof Error ? error.message : 'Unknown error'}`,
 				);
@@ -315,6 +322,7 @@ export function parseFixedCollectionValues(
 			try {
 				return JSON.parse(jsonValue) as IDataObject;
 			} catch (error) {
+				// eslint-disable-next-line @n8n/community-nodes/require-node-api-error
 				throw new Error(
 					`Invalid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`,
 				);
@@ -3586,7 +3594,6 @@ export async function discoverUserExtendedDataFields(
 	}
 }
 
-
 // Discover listing extended data fields without validation (for deletion)
 export async function discoverListingExtendedDataFields(
 	context: ILoadOptionsFunctions,
@@ -3626,7 +3633,6 @@ export async function discoverListingExtendedDataFields(
 	}
 }
 
-
 // Discover transaction extended data fields without validation (for deletion)
 export async function discoverTransactionExtendedDataFields(
 	context: ILoadOptionsFunctions,
@@ -3665,4 +3671,3 @@ export async function discoverTransactionExtendedDataFields(
 		return new Set();
 	}
 }
-

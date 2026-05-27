@@ -1,4 +1,5 @@
-import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import type { IExecuteFunctions, IDataObject, INodeExecutionData, JsonObject } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import get from 'lodash/get';
 import cloneDeep from 'lodash/cloneDeep';
 import {
@@ -95,7 +96,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				} as INodeExecutionData);
 				continue;
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 	}
 
