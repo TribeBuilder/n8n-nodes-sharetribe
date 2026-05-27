@@ -6,8 +6,9 @@ import type {
 	INodeTypeDescription,
 	ILoadOptionsFunctions,
 	INodePropertyOptions,
+	JsonObject,
 } from 'n8n-workflow';
-import { NodeConnectionTypes } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes } from 'n8n-workflow';
 import { DateTime } from 'luxon';
 import { apiRequest } from './v1/transport';
 import { flattenSharetribeResponse, PollingQueryBuilder } from './v1/helpers/Sharetribe';
@@ -27,6 +28,7 @@ export class SharetribeTrigger implements INodeType {
 		group: ['trigger'],
 		version: 1,
 		description: 'Poll Sharetribe for marketplace events',
+		subtitle: '={{($parameter["resources"] && $parameter["resources"].length) ? "Events: " + $parameter["resources"].join(", ") : "Events"}}',
 		defaults: { name: 'Sharetribe Trigger' },
 		polling: true,
 		inputs: [],
@@ -123,7 +125,7 @@ export class SharetribeTrigger implements INodeType {
 			// Manual mode: throw so errors surface when debugging.
 			// Production: swallow and return null — next poll interval retries automatically.
 			if (isManualMode) {
-				throw error;
+				throw new NodeApiError(this.getNode(), error as JsonObject);
 			}
 
 			const node = this.getNode();
