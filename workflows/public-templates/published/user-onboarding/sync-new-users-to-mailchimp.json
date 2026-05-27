@@ -1,0 +1,102 @@
+{
+	"meta": { "instanceId": "sharetribe-public-template" },
+	"name": "[template] Sync New Users to Mailchimp",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## [template] Sync New Users to Mailchimp\n\n### How it works\n\n1. A Sharetribe trigger fires whenever a new user is created on the Sharetribe marketplace platform.\n2. The new user's details are automatically sent to Mailchimp, creating a new member in the specified audience list.\n\n### Setup steps\n\n- - [ ] Connect your Sharetribe account credentials to the **Sharetribe Trigger** node and configure the event (e.g., new user created).\n- - [ ] Connect your Mailchimp account credentials to the **Create a member** node.\n- - [ ] In the **Create a member** node, select the target Mailchimp audience/list and map the relevant user fields (e.g., email, first name, last name).\n\n### Customization\n\nYou can extend the Mailchimp member creation with additional field mappings (e.g., tags, merge fields, or marketing preferences) to enrich subscriber data beyond basic contact info.",
+				"width": 480,
+				"height": 720
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [-320, 144],
+			"id": "8e40fa65-ebd3-4bc6-9f16-b80f1636d3df",
+			"name": "Sticky Note"
+		},
+		{
+			"parameters": {
+				"content": "## Sync new users to Mailchimp\n\nListens for new user registrations on Sharetribe and immediately creates a corresponding member in Mailchimp, keeping both platforms in sync.",
+				"width": 496,
+				"height": 320,
+				"color": 7
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [240, 144],
+			"id": "f50a515b-84a0-4a89-bddd-cb111548e05e",
+			"name": "Sticky Note1"
+		},
+		{
+			"parameters": {
+				"pollTimes": {
+					"item": [
+						{
+							"mode": "everyMinute"
+						}
+					]
+				},
+				"resources": ["user"],
+				"eventTypes": ["user/created"],
+				"simplify": false,
+				"eventAttributes": ["createdAt", "eventType", "resourceId", "resourceType", "resource"]
+			},
+			"type": "n8n-nodes-sharetribe.sharetribeTrigger",
+			"typeVersion": 1,
+			"position": [288, 304],
+			"id": "99543350-f0a5-44a9-a7dd-47889f440e5a",
+			"name": "When New Sharetribe User Joins",
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"list": "YOUR_MAILCHIMP_AUDIENCE_ID",
+				"email": "=",
+				"status": "pending",
+				"options": {},
+				"mergeFieldsUi": {
+					"mergeFieldsValues": [
+						{
+							"name": "FNAME",
+							"value": "="
+						},
+						{
+							"name": "LNAME",
+							"value": "="
+						}
+					]
+				}
+			},
+			"type": "n8n-nodes-base.mailchimp",
+			"typeVersion": 1,
+			"position": [592, 304],
+			"id": "9a616b73-0730-4748-bedb-b011f5500348",
+			"name": "Add Member to Mailchimp",
+			"credentials": {
+				"mailchimpApi": {
+					"id": "credential-id",
+					"name": "Mailchimp Credential"
+				}
+			}
+		}
+	],
+	"connections": {
+		"When New Sharetribe User Joins": {
+			"main": [
+				[
+					{
+						"node": "Add Member to Mailchimp",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {}
+}

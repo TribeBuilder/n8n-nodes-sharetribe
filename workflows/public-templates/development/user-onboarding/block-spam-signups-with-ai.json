@@ -1,0 +1,247 @@
+{
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## Try It Out!\n### Block spam and impersonation signups with AI\n\nDetect suspicious user signups using AI and only auto-approve users that look legitimate. Stops bots, impersonators of your support team, and random-string names from gaining marketplace access. Built for marketplaces with user approval enabled.\n\n### How it works\n* The Sharetribe Trigger polls for `user/created` events with the full user resource.\n* A Fetch Marketplace node pulls your marketplace's name from Sharetribe so the AI knows the exact brand name it should protect against impersonation.\n* An OpenAI node analyzes the user's first and last name for fraud indicators: impersonation of your brand or support staff, unicode homoglyphs, random strings, and unpronounceable names.\n* An IF node only lets legitimate users continue. Flagged users stay in `pendingApproval` for manual review.\n* The Sharetribe Approve User action moves legitimate users from `pendingApproval` to `active`.\n\n### How to set up\n1. Connect your Sharetribe credentials (Client ID and Client Secret from Console > Build > Applications).\n2. Connect your OpenAI credentials.\n3. Enable \"Require user approval\" in Console > Build > General so new users land in `pendingApproval`.\n4. Configure an error workflow under this workflow's Settings so failed runs alert you instead of silently dropping signups.\n5. Test with a sample signup, then activate the workflow.\n\n### Requirements\n* Sharetribe marketplace with Integration API credentials\n* OpenAI API key (any chat-capable model will work, the template defaults to a small fast one)\n* User approval enabled in marketplace settings\n\n### Limitations\n* This workflow targets impersonation and obvious-bot patterns: support/admin/team names, unicode lookalikes of your brand, random strings, unpronounceable names.\n* It will NOT catch spammers who sign up with realistic-sounding names like \"John Smith\". For those, layer in additional checks (email domain, IP reputation, duplicate accounts).\n* The prompt defaults to FLAGGED when the model is unsure, so expect some false positives. Review your `pendingApproval` queue regularly.\n\n### How to customize\n* Swap the OpenAI node for Anthropic, Google Gemini, Ollama, or any chat model n8n supports.\n* Add a false-branch action: email the flagged user a polite rejection, log them to a Google Sheet, or post to Slack for manual admin review.\n* Tighten or loosen the prompt to match your marketplace's tolerance and language mix.\n* Layer in an email-domain check, IP reputation lookup, or duplicate-account detection alongside the AI step.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/).",
+				"height": 1000,
+				"width": 480
+			},
+			"id": "0e4ff198-4ab3-4e51-bf3f-7b153f57b3ae",
+			"name": "Sticky Note",
+			"type": "n8n-nodes-base.stickyNote",
+			"position": [544, 704],
+			"typeVersion": 1
+		},
+		{
+			"parameters": {
+				"content": "## 1. Listen for new users\nPolls for `user/created` events with the full resource so the first and last name fields are available to the AI step.",
+				"height": 280,
+				"width": 280,
+				"color": 7
+			},
+			"id": "ac093eb7-8214-494e-b0bb-7c5f1e670673",
+			"name": "Sticky Note1",
+			"type": "n8n-nodes-base.stickyNote",
+			"position": [1088, 944],
+			"typeVersion": 1
+		},
+		{
+			"parameters": {
+				"content": "## 2. Fetch marketplace name\nGets your marketplace's name from Sharetribe and feeds it into the AI prompt so the model can detect impersonation of your specific brand.",
+				"height": 280,
+				"width": 280,
+				"color": 7
+			},
+			"id": "f1e2d3c4-b5a6-4798-89ab-12345abcde01",
+			"name": "Sticky Note2",
+			"type": "n8n-nodes-base.stickyNote",
+			"position": [1408, 944],
+			"typeVersion": 1
+		},
+		{
+			"parameters": {
+				"content": "## 3. AI fraud check\nSends the user's first and last name plus the marketplace name to OpenAI. The model returns `FLAGGED` for suspicious signups and `LEGITIMATE` for real users.",
+				"height": 280,
+				"width": 280,
+				"color": 7
+			},
+			"id": "a6f5d0b2-c649-4f23-8efe-5082bc24ead6",
+			"name": "Sticky Note3",
+			"type": "n8n-nodes-base.stickyNote",
+			"position": [1728, 944],
+			"typeVersion": 1
+		},
+		{
+			"parameters": {
+				"content": "## 4. Filter out flagged users\nOnly legitimate users continue. Flagged users stay in `pendingApproval` so a human can review them in Console > Manage > Users.",
+				"height": 280,
+				"width": 280,
+				"color": 7
+			},
+			"id": "ba89950e-9346-429a-a29e-a70c199a289f",
+			"name": "Sticky Note4",
+			"type": "n8n-nodes-base.stickyNote",
+			"position": [2048, 944],
+			"typeVersion": 1
+		},
+		{
+			"parameters": {
+				"content": "## 5. Approve the user\nApproves legitimate users, setting their state from `pendingApproval` to `active`.",
+				"height": 280,
+				"width": 280,
+				"color": 7
+			},
+			"id": "8008db1b-3ca4-4427-ad21-c5a1dd718db4",
+			"name": "Sticky Note5",
+			"type": "n8n-nodes-base.stickyNote",
+			"position": [2400, 944],
+			"typeVersion": 1
+		},
+		{
+			"parameters": {
+				"pollTimes": {
+					"item": [
+						{
+							"mode": "everyMinute"
+						}
+					]
+				},
+				"resources": ["user"],
+				"eventTypes": ["user/created"]
+			},
+			"type": "n8n-nodes-sharetribe.sharetribeTrigger",
+			"typeVersion": 1,
+			"position": [1168, 1200],
+			"id": "82a451a9-d7a5-47e8-ad3e-86ad055ba594",
+			"name": "Sharetribe Trigger",
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "marketplace"
+			},
+			"id": "fetch-marketplace-spam-001",
+			"name": "Fetch Marketplace",
+			"type": "n8n-nodes-sharetribe.sharetribe",
+			"position": [1488, 1200],
+			"typeVersion": 1,
+			"executeOnce": true,
+			"retryOnFail": true,
+			"waitBetweenTries": 2000,
+			"maxTries": 3,
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"modelId": {
+					"__rl": true,
+					"mode": "list",
+					"value": "gpt-4o-mini",
+					"cachedResultName": "gpt-4o-mini"
+				},
+				"messages": {
+					"values": [
+						{
+							"content": "=You are a fraud detection assistant for a multi-vendor marketplace called \"{{ $('Fetch Marketplace').first().json.name }}\". Your job is to analyze user signup details and decide if they are likely fraudulent or spam.\n\nAnalyze the following signup:\n\nFirst name: {{ $('Sharetribe Trigger').item.json.resource.profile.firstName }}\nLast name: {{ $('Sharetribe Trigger').item.json.resource.profile.lastName }}\n\nFlag the signup as FRAUDULENT if ANY of the following are detected:\n\n1. Impersonation attempts. Names containing words like \"support\", \"team\", \"admin\", \"moderator\", \"helpdesk\", \"staff\", \"official\", \"customer service\", or the marketplace name \"{{ $('Fetch Marketplace').first().json.name }}\" (or any close variation, abbreviation, or spelling alteration of it).\n\n2. Homoglyphs or unicode lookalike characters used to disguise any of the above words, including Cyrillic, Greek, small caps, fullwidth, mathematical bold, or mathematical italic variants. Examples: Ѕuрроrt (Cyrillic), Suρρort (Greek), Sᴜᴘᴘᴏʀᴛ (small caps), 𝐒𝐮𝐩𝐩𝐨𝐫𝐭 (mathematical bold), Теаm (Cyrillic), and any unicode-disguised version of \"{{ $('Fetch Marketplace').first().json.name }}\".\n\n3. Random string detection. First or last name appears to be a random string of characters with no resemblance to a real human name. Examples: FIEIyComHJbJOxgfGyFu, dlQcXawrhtIAhtVyXWHsBMs, xKqPzWmRtYvNjLs.\n\n4. Unusually long names with mixed random uppercase and lowercase characters.\n\n5. Names that contain no vowels or are unpronounceable.\n\nLegitimate names should pass, including:\n* Real human names from any language or culture (e.g. José, Müller, Björk, 田中, محمد, Łukasz, Siobhán)\n* Names with accents, diacritics, or non-Latin characters when used as a plausible personal name\n* Short or unusual but plausible names\n* Compound names, hyphenated names, or names with apostrophes\n\nIf you are unsure, default to FLAGGED to stay on the safe side.\n\nRespond with ONLY one word: FLAGGED or LEGITIMATE. Do not include punctuation, explanation, or anything else."
+						}
+					]
+				},
+				"options": {
+					"temperature": 0
+				}
+			},
+			"id": "603caf28-da5e-45c5-ac12-2ded84ee4937",
+			"name": "AI Fraud Check",
+			"type": "@n8n/n8n-nodes-langchain.openAi",
+			"position": [1792, 1168],
+			"typeVersion": 1.8
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"options": {
+						"caseSensitive": true,
+						"leftValue": "",
+						"typeValidation": "strict",
+						"version": 1
+					},
+					"combinator": "and",
+					"conditions": [
+						{
+							"leftValue": "={{ $json.message.content.trim().toUpperCase() }}",
+							"rightValue": "LEGITIMATE",
+							"operator": {
+								"type": "string",
+								"operation": "contains"
+							}
+						}
+					]
+				},
+				"options": {}
+			},
+			"id": "c58993d3-04e8-4198-a88d-959cc753378e",
+			"name": "Is Legitimate?",
+			"type": "n8n-nodes-base.if",
+			"position": [2112, 1168],
+			"typeVersion": 2
+		},
+		{
+			"parameters": {
+				"resource": "user",
+				"operation": "approve",
+				"userId": "={{ $('Sharetribe Trigger').item.json.resource.id }}"
+			},
+			"type": "n8n-nodes-sharetribe.sharetribe",
+			"typeVersion": 1,
+			"position": [2480, 1168],
+			"id": "ce7e60d6-a8ab-4a91-ae8c-3ffddfccf0b7",
+			"name": "Approve a user",
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		}
+	],
+	"connections": {
+		"Sharetribe Trigger": {
+			"main": [
+				[
+					{
+						"node": "Fetch Marketplace",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Fetch Marketplace": {
+			"main": [
+				[
+					{
+						"node": "AI Fraud Check",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"AI Fraud Check": {
+			"main": [
+				[
+					{
+						"node": "Is Legitimate?",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Is Legitimate?": {
+			"main": [
+				[
+					{
+						"node": "Approve a user",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {},
+	"meta": {
+		"instanceId": "sharetribe-public-template"
+	}
+}
