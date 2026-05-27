@@ -1,0 +1,289 @@
+{
+	"meta": {
+		"instanceId": "sharetribe-public-template"
+	},
+	"name": "[template] Admin Email on New Dispute",
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## [template] Admin Email on New Dispute\n\n### How it works\n\n1. A Sharetribe trigger fires whenever a new transaction transition occurs on the platform.\n2. A conditional check filters transitions to only proceed when the transition represents a dispute.\n3. Full dispute details are fetched from Sharetribe using the transaction ID.\n4. Key fields (transaction ID, last transition, timestamp, listing title) are extracted and prepared for the email.\n5. A Gmail alert is sent to the admin summarising the new dispute.\n\n### Setup steps\n\n- - [ ] Connect your Sharetribe account credentials to the trigger and fetch nodes.\n- - [ ] Configure the trigger to listen on the correct Sharetribe marketplace environment.\n- - [ ] Update the 'Check Dispute Transition' IF node with the exact transition name(s) that represent a dispute in your process.\n- - [ ] Connect your Gmail account credentials to the 'Send Dispute Alert' node.\n- - [ ] Set the recipient admin email address and customise the email subject/body in the Gmail node.\n\n### Customization\n\nYou can extend the 'Prepare Email Fields' Set node to include additional fields (e.g. customer name, disputed amount) or swap the Gmail node for another email/notification provider such as SendGrid or Slack.",
+				"width": 480,
+				"height": 896
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [-448, 96],
+			"id": "0e12f00c-bfb1-4126-ac1b-d0cb73b6c03f",
+			"name": "Sticky Note"
+		},
+		{
+			"parameters": {
+				"content": "## Trigger and dispute filter\n\nListens for any new Sharetribe transaction transition and conditionally checks whether it represents a dispute, stopping the workflow early for non-dispute transitions.",
+				"width": 512,
+				"height": 320,
+				"color": 7
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [112, 144],
+			"id": "9684112f-70e5-4ab0-952b-f97e9fb0df24",
+			"name": "Sticky Note1"
+		},
+		{
+			"parameters": {
+				"content": "## Fetch and prepare dispute data\n\nRetrieves the full transaction details from Sharetribe and maps the relevant fields (transaction ID, transition name, timestamp, listing title) into a clean structure ready for the email.",
+				"width": 512,
+				"height": 336,
+				"color": 7
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [752, 128],
+			"id": "586de70a-860e-48e9-8a38-a41a26c3f556",
+			"name": "Sticky Note2"
+		},
+		{
+			"parameters": {
+				"content": "## Send admin alert email\n\nSends a Gmail notification to the admin containing the prepared dispute details so they can act promptly.",
+				"width": 240,
+				"height": 368,
+				"color": 7
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [1392, 96],
+			"id": "5de94bd2-dda4-4aae-9d12-c23ebf6a1ca0",
+			"name": "Sticky Note3"
+		},
+		{
+			"parameters": {
+				"pollTimes": {
+					"item": [
+						{
+							"mode": "everyMinute"
+						}
+					]
+				},
+				"resources": ["transaction"],
+				"eventTypes": ["transaction/transitioned"],
+				"simplify": false,
+				"eventAttributes": ["createdAt", "eventType", "resourceId", "resource"]
+			},
+			"type": "n8n-nodes-sharetribe.sharetribeTrigger",
+			"typeVersion": 1,
+			"position": [160, 300],
+			"id": "trigger-transaction",
+			"name": "When Transaction Transition Occurs",
+			"retryOnFail": true,
+			"waitBetweenTries": 2000,
+			"maxTries": 3,
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"options": {
+						"leftValue": "",
+						"typeValidation": "strict",
+						"version": 1
+					},
+					"combinator": "and",
+					"conditions": [
+						{
+							"id": "dispute-transition",
+							"leftValue": "={{ $json.attributes.resource.attributes.lastTransition }}",
+							"rightValue": "transition/dispute",
+							"operator": {
+								"type": "string",
+								"operation": "equals"
+							}
+						}
+					]
+				},
+				"options": {}
+			},
+			"id": "if-dispute",
+			"name": "If Dispute Transition",
+			"type": "n8n-nodes-base.if",
+			"position": [480, 300],
+			"typeVersion": 2
+		},
+		{
+			"parameters": {
+				"resource": "transaction",
+				"operation": "get",
+				"transactionId": "={{ $('When Transaction Transition Occurs').item.json.attributes.resourceId }}",
+				"simplify": false,
+				"transactionFields": [
+					"lastTransition",
+					"lastTransitionedAt",
+					"customer",
+					"provider",
+					"listing"
+				],
+				"listingFields": ["title"],
+				"userFields": ["firstName", "lastName", "email"]
+			},
+			"type": "n8n-nodes-sharetribe.sharetribe",
+			"typeVersion": 1,
+			"position": [800, 300],
+			"id": "sharetribe-get-transaction",
+			"name": "Fetch Transaction Details",
+			"retryOnFail": true,
+			"waitBetweenTries": 2000,
+			"maxTries": 3,
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"assignments": {
+					"assignments": [
+						{
+							"id": "transaction-id",
+							"name": "transaction.id",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.id }}"
+						},
+						{
+							"id": "transaction-last-transition",
+							"name": "transaction.lastTransition",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.lastTransition }}"
+						},
+						{
+							"id": "transaction-last-transitioned-at",
+							"name": "transaction.lastTransitionedAt",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.lastTransitionedAt }}"
+						},
+						{
+							"id": "listing-title",
+							"name": "listing.title",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.listing.title }}"
+						},
+						{
+							"id": "customer-first-name",
+							"name": "customer.firstName",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.customer.profile.firstName }}"
+						},
+						{
+							"id": "customer-last-name",
+							"name": "customer.lastName",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.customer.profile.lastName }}"
+						},
+						{
+							"id": "customer-email",
+							"name": "customer.email",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.customer.email }}"
+						},
+						{
+							"id": "provider-first-name",
+							"name": "provider.firstName",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.provider.profile.firstName }}"
+						},
+						{
+							"id": "provider-last-name",
+							"name": "provider.lastName",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.provider.profile.lastName }}"
+						},
+						{
+							"id": "provider-email",
+							"name": "provider.email",
+							"type": "string",
+							"value": "={{ $('Fetch Transaction Details').item.json.provider.email }}"
+						}
+					]
+				},
+				"options": {}
+			},
+			"type": "n8n-nodes-base.set",
+			"typeVersion": 3.4,
+			"position": [1120, 300],
+			"id": "set-prepare-fields",
+			"name": "Build Dispute Email Fields"
+		},
+		{
+			"parameters": {
+				"sendTo": "admin@your-marketplace.com",
+				"subject": "=A new dispute took place on your marketplace!",
+				"emailType": "text",
+				"message": "=New Dispute\n\nHey There,\n\nA dispute has been opened on your marketplace for \"{{ $json.listing.title }}\" and requires your attention.\n\nCustomer: {{ $json.customer.firstName }} {{ $json.customer.lastName }} ({{ $json.customer.email }})\nProvider: {{ $json.provider.firstName }} {{ $json.provider.lastName }} ({{ $json.provider.email }})\nDispute opened at: {{ $json.transaction.lastTransitionedAt }}\n\nhttps://console.sharetribe.com/transactions/{{ $json.transaction.id }}",
+				"options": {}
+			},
+			"id": "gmail-send",
+			"name": "Send Dispute Alert to Admin",
+			"type": "n8n-nodes-base.gmail",
+			"position": [1440, 300],
+			"typeVersion": 2.1,
+			"credentials": {
+				"gmailOAuth2": {
+					"id": "credential-id",
+					"name": "Gmail Credential"
+				}
+			}
+		}
+	],
+	"connections": {
+		"When Transaction Transition Occurs": {
+			"main": [
+				[
+					{
+						"node": "If Dispute Transition",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"If Dispute Transition": {
+			"main": [
+				[
+					{
+						"node": "Fetch Transaction Details",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Fetch Transaction Details": {
+			"main": [
+				[
+					{
+						"node": "Build Dispute Email Fields",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Build Dispute Email Fields": {
+			"main": [
+				[
+					{
+						"node": "Send Dispute Alert to Admin",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {}
+}
