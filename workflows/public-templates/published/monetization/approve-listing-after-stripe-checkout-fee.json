@@ -1,0 +1,258 @@
+{
+	"nodes": [
+		{
+			"parameters": {
+				"content": "## Approve Listing After Stripe Checkout Fee Paid\n\n### How it works\n\n1. The workflow is triggered when a Stripe Checkout session completes.\n2. A conditional check verifies whether the payment came from the expected payment link.\n3. If the check passes, the corresponding Sharetribe listing is approved.\n\n### Setup steps\n\n- - [ ] Connect your Stripe account and configure the Stripe Trigger to listen for `checkout.session.completed` events.\n- - [ ] In the 'Check Is Expected Payment Link' node, set the condition to match your specific Stripe Payment Link ID or URL.\n- - [ ] Connect your Sharetribe account and configure the 'Approve Sharetribe Listing' node with the correct listing ID mapping from the Stripe payload.\n\n### Customization\n\nYou can extend the workflow by adding a branch for failed checks (e.g., sending an alert or logging unexpected payments). You could also add a notification step after the Sharetribe listing is approved.",
+				"height": 768,
+				"width": 480
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [-448, 352],
+			"id": "1556f8b4-6261-4c76-b0dd-7f8db6c188b6",
+			"name": "Sticky Note"
+		},
+		{
+			"parameters": {
+				"content": "## Stripe to Sharetribe approval\n\nListens for a completed Stripe Checkout, validates that it matches the expected payment link, and approves the corresponding Sharetribe listing if the check passes.",
+				"height": 336,
+				"width": 656,
+				"color": 7
+			},
+			"type": "n8n-nodes-base.stickyNote",
+			"typeVersion": 1,
+			"position": [112, 352],
+			"id": "6c302203-6ff5-4095-ad81-72592e25491e",
+			"name": "Sticky Note1"
+		},
+		{
+			"parameters": {
+				"events": ["checkout.session.completed"]
+			},
+			"type": "n8n-nodes-base.stripeTrigger",
+			"typeVersion": 1,
+			"position": [160, 512],
+			"id": "779b4005-4758-44a2-95bb-f6aafe266a27",
+			"name": "When Stripe Checkout Completes",
+			"credentials": {
+				"stripeApi": {
+					"id": "credential-id",
+					"name": "Stripe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"resource": "listing",
+				"operation": "approve",
+				"listingId": "={{ $json.data.object.client_reference_id }}"
+			},
+			"type": "n8n-nodes-sharetribe.sharetribe",
+			"typeVersion": 1,
+			"position": [608, 512],
+			"id": "013d738e-2907-4d22-a140-450f517b8370",
+			"name": "Approve Sharetribe Listing",
+			"retryOnFail": true,
+			"waitBetweenTries": 2000,
+			"maxTries": 3,
+			"credentials": {
+				"sharetribeOAuth2Api": {
+					"id": "credential-id",
+					"name": "Sharetribe Credential"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"conditions": {
+					"options": {
+						"caseSensitive": true,
+						"leftValue": "",
+						"typeValidation": "strict",
+						"version": 3
+					},
+					"conditions": [
+						{
+							"id": "4b14836e-f9a8-4b0f-ab13-0d202424ca39",
+							"leftValue": "={{ $json.data.object.payment_link }}",
+							"rightValue": "plink_1T9t",
+							"operator": {
+								"type": "string",
+								"operation": "equals"
+							}
+						}
+					],
+					"combinator": "and"
+				},
+				"options": {}
+			},
+			"type": "n8n-nodes-base.if",
+			"typeVersion": 2.3,
+			"position": [368, 512],
+			"id": "46133db5-e6d5-436d-84d8-7baf7b9cd068",
+			"name": "If Expected Payment Link"
+		}
+	],
+	"connections": {
+		"When Stripe Checkout Completes": {
+			"main": [
+				[
+					{
+						"node": "If Expected Payment Link",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"If Expected Payment Link": {
+			"main": [
+				[
+					{
+						"node": "Approve Sharetribe Listing",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"pinData": {
+		"When Stripe Checkout Completes": [
+			{
+				"id": "evt_1yU",
+				"object": "event",
+				"api_version": "2026-03-25.dahlia",
+				"created": 1779763617,
+				"data": {
+					"object": {
+						"id": "cs_test_a1ro8",
+						"object": "checkout.session",
+						"adaptive_pricing": {
+							"enabled": true
+						},
+						"after_expiration": null,
+						"allow_promotion_codes": false,
+						"amount_subtotal": 4900,
+						"amount_total": 4900,
+						"automatic_tax": {
+							"enabled": false,
+							"liability": null,
+							"provider": null,
+							"status": null
+						},
+						"billing_address_collection": "auto",
+						"cancel_url": "https://stripe.com",
+						"client_reference_id": "my-listinging-uuid",
+						"client_secret": null,
+						"collected_information": {
+							"business_name": null,
+							"individual_name": null,
+							"shipping_details": null
+						},
+						"consent": null,
+						"consent_collection": {
+							"payment_method_reuse_agreement": null,
+							"promotions": "none",
+							"terms_of_service": "none"
+						},
+						"created": 1779763500,
+						"currency": "usd",
+						"currency_conversion": null,
+						"custom_fields": [],
+						"custom_text": {
+							"after_submit": null,
+							"shipping_address": null,
+							"submit": null,
+							"terms_of_service_acceptance": null
+						},
+						"customer": "cus_U1u",
+						"customer_account": "acct_1P",
+						"customer_creation": "if_required",
+						"customer_details": {
+							"address": {
+								"city": null,
+								"country": "CA",
+								"line1": null,
+								"line2": null,
+								"postal_code": null,
+								"state": null
+							},
+							"business_name": null,
+							"email": "myuser@mymarketplace.com",
+							"individual_name": null,
+							"name": "Provider User",
+							"phone": null,
+							"tax_exempt": "none",
+							"tax_ids": []
+						},
+						"customer_email": null,
+						"discounts": [],
+						"expires_at": 1779849900,
+						"integration_identifier": null,
+						"invoice": "in_1T5s",
+						"invoice_creation": null,
+						"livemode": false,
+						"locale": "auto",
+						"managed_payments": {
+							"enabled": false
+						},
+						"metadata": {},
+						"mode": "subscription",
+						"origin_context": null,
+						"payment_intent": null,
+						"payment_link": "plink_1T9t",
+						"payment_method_collection": "always",
+						"payment_method_configuration_details": null,
+						"payment_method_options": {
+							"card": {
+								"request_three_d_secure": "automatic"
+							}
+						},
+						"payment_method_types": ["card", "link"],
+						"payment_status": "paid",
+						"permissions": null,
+						"phone_number_collection": {
+							"enabled": false
+						},
+						"presentment_details": {
+							"presentment_amount": 7037,
+							"presentment_currency": "cad"
+						},
+						"recovered_from": null,
+						"saved_payment_method_options": {
+							"allow_redisplay_filters": ["always"],
+							"payment_method_remove": "disabled",
+							"payment_method_save": null
+						},
+						"setup_intent": null,
+						"shipping_address_collection": null,
+						"shipping_cost": null,
+						"shipping_options": [],
+						"status": "complete",
+						"submit_type": "auto",
+						"subscription": "sub_1Z",
+						"success_url": "https://stripe.com",
+						"total_details": {
+							"amount_discount": 0,
+							"amount_shipping": 0,
+							"amount_tax": 0
+						},
+						"ui_mode": "hosted_page",
+						"url": null,
+						"wallet_options": null
+					}
+				},
+				"livemode": false,
+				"pending_webhooks": 2,
+				"request": {
+					"id": null,
+					"idempotency_key": null
+				},
+				"type": "checkout.session.completed"
+			}
+		]
+	},
+	"meta": { "instanceId": "sharetribe-public-template" },
+	"name": "[template] Approve Listing After Stripe Checkout Fee Paid"
+}
