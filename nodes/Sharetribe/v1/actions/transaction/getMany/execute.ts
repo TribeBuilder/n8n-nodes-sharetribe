@@ -1,4 +1,5 @@
-import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import type { IExecuteFunctions, IDataObject, INodeExecutionData, JsonObject } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import {
 	Sharetribe,
 	ENDPOINTS,
@@ -53,7 +54,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				returnData.push({ json: { error: error.message }, pairedItem: { item: i } });
 				continue;
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 	}
 

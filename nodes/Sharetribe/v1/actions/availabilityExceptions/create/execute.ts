@@ -1,4 +1,5 @@
-import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData, JsonObject } from 'n8n-workflow';
+import { NodeApiError } from 'n8n-workflow';
 import { DateTime } from 'luxon';
 import {
 	FieldsetBuilder,
@@ -71,7 +72,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				} as INodeExecutionData);
 				continue;
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 	}
 

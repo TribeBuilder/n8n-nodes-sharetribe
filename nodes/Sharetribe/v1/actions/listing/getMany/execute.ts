@@ -2,6 +2,8 @@ import {
 	type IExecuteFunctions,
 	type IDataObject,
 	type INodeExecutionData,
+	type JsonObject,
+	NodeApiError,
 	NodeOperationError,
 } from 'n8n-workflow';
 import {
@@ -73,7 +75,7 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 				returnData.push({ json: { error: error.message }, pairedItem: { item: i } });
 				continue;
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 	}
 
