@@ -1,0 +1,671 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## SMS the provider when a new transaction is initiated\n\nThe message **adapts to the transaction process** - bookings show start and end times in the listing's timezone, purchases show what the customer paid and what the provider earns, negotiations show the proposed total and the provider's earnings if accepted, and inquiries get a short prompt with no money or dates. A **Route By Process Name** Switch routes on `transactionProcessName` to one of four Set nodes - **Build Inquiry SMS**, **Build Booking SMS**, **Build Negotiation SMS**, **Build Purchase SMS** - each holding the editable `smsBody` template for that process. Only the four default Sharetribe processes (`default-inquiry`, `default-booking`, `default-negotiation`, `default-purchase`) are routed; custom process names fall through with no SMS.\n\n### How it works\n\n1. A Sharetribe trigger fires whenever a new transaction is initiated on the marketplace.\n2. The marketplace name is fetched from Sharetribe and merged with the transaction event.\n3. The full transaction is retrieved with `provider`, `customer`, `listing`, `booking`, `payinTotal`, and `payoutTotal`.\n4. **Prepare Provider SMS Fields** flattens and formats everything the SMS needs: listing title, customer name, provider phone, booking times in the listing's timezone, payin/payout as money strings, and the `transactionProcessName`.\n5. **Provider Has Phone Number?** drops transactions where the provider has no phone on file.\n6. **Route By Process Name** Switch sends each item to the matching **Build * SMS** Set node, which sets `smsBody`.\n7. Twilio sends `smsBody` to the provider's phone.\n\n### Setup steps\n\n- - [ ] Connect your Sharetribe credentials to the trigger and all Sharetribe action nodes.\n- - [ ] Connect your Twilio account credentials to the **Send SMS To Provider** node and set the `From` number.\n- - [ ] Confirm your provider profiles store phone numbers at `profile.protectedData.phoneNumber`. If not, update the `to` expression on the Twilio node.\n- - [ ] Configure an error workflow under this workflow's Settings so failed runs alert you instead of silently dropping notifications.\n- - [ ] Open each **Build * SMS** Set node and tweak the `smsBody` template to taste.\n\n### Requirements\n\n* Sharetribe marketplace with Integration API credentials\n* Twilio account with an SMS-capable phone number\n* Provider phone numbers stored on the user profile (typically `protectedData.phoneNumber`)\n\n### Customization\n\nSwap Twilio for MessageBird, Vonage, or another SMS provider supported by n8n. Edit **Prepare Provider SMS Fields** to add fields or change how money and dates are formatted. Edit any of the four **Build * SMS** Set nodes to change wording or rearrange lines for that process type. Add a second SMS node to also notify the customer.\n\nNeed help? Visit the [n8n Community](https://community.n8n.io/) or [Sharetribe Docs](https://www.sharetribe.com/docs/).",
+        "height": 896,
+        "width": 480
+      },
+      "id": "5e02fc36-2148-4cd0-85e1-b847b06aa517",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [2304, 1456],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Listen for new transactions\n\nPolls for `transaction/initiated` events. Fires once per new transaction, regardless of process type.",
+        "height": 320,
+        "width": 280,
+        "color": 7
+      },
+      "id": "d5f8baca-5429-4ede-8c11-6e871d23ca03",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [2864, 1552],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Fetch marketplace branding\n\nRetrieves the marketplace info from Sharetribe. The marketplace name appears as a prefix at the start of the SMS.",
+        "height": 304,
+        "width": 640,
+        "color": 7
+      },
+      "id": "8af97103-994c-457f-a27f-6b91e786e649",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [3184, 1664],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Merge assets with transaction event\n\nCombines the fetched marketplace assets with the original transaction event so the downstream nodes have both in one stream.",
+        "height": 416,
+        "color": 7
+      },
+      "id": "60074850-50ea-45fd-a8d7-ea637ba88fe1",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [3856, 1456],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Fetch transaction and prepare fields\n\nRetrieves the full transaction from Sharetribe, then flattens the fields the SMS needs: listing title, provider phone, customer name, booking times, payin/payout strings, marketplace name, and `transactionProcessName` derived from `processName`.",
+        "height": 336,
+        "width": 416,
+        "color": 7
+      },
+      "id": "567972ff-224a-46e4-9024-57865e6dbb7b",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [4128, 1536],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Skip, route, and build SMS body\n\nDrops transactions where the provider has no phone number, then routes by `transactionProcessName` to one of four Set nodes that build the SMS body. Edit each Set node's `smsBody` value to change the wording for that process type. Only the four default Sharetribe processes are handled - custom process names get no SMS.",
+        "height": 864,
+        "width": 720,
+        "color": 7
+      },
+      "id": "ae64da17-6361-4448-9a68-bc58c42c0c12",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [4576, 1296],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Send SMS to provider\n\nSends the SMS via Twilio to the provider's phone. The `to` expression reads `provider.phone` prepared upstream.",
+        "height": 320,
+        "width": 280,
+        "color": 7
+      },
+      "id": "810be2f5-2f64-4277-a977-3d01dbfc4395",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [5440, 1552],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "resources": ["transaction"],
+        "eventTypes": ["transaction/initiated"],
+        "simplify": false,
+        "eventAttributes": ["createdAt", "resourceId", "resource"]
+      },
+      "id": "08cf4953-7fea-4e97-95c4-3c592e4c0a87",
+      "name": "When New Transaction Initiated",
+      "type": "n8n-nodes-sharetribe.sharetribeTrigger",
+      "position": [2912, 1712],
+      "typeVersion": 1,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 3,
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "marketplace-url",
+              "name": "marketplaceUrl",
+              "type": "string",
+              "value": "https://www.yourmarketplace.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "661e10c0-d1ce-41b2-a7ae-2eb2d10afa0d",
+      "name": "Set Marketplace URL",
+      "type": "n8n-nodes-base.set",
+      "position": [3232, 1792],
+      "typeVersion": 3.4,
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "marketplace"
+      },
+      "id": "425ef440-52fa-49ea-b9a9-79a89ca1c7b1",
+      "name": "Fetch Marketplace Data",
+      "type": "n8n-nodes-sharetribe.sharetribe",
+      "position": [3456, 1792],
+      "typeVersion": 1,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 3,
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "e592c259-7b46-4835-b15e-774310562753",
+      "name": "Merge Assets With Transaction Event",
+      "type": "n8n-nodes-base.merge",
+      "position": [3904, 1712],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "resource": "transaction",
+        "transactionId": "={{ $json.attributes.resourceId }}",
+        "simplify": false,
+        "transactionFields": [
+          "booking",
+          "customer",
+          "lastTransition",
+          "payinTotal",
+          "payoutTotal",
+          "processName",
+          "state",
+          "listing",
+          "provider"
+        ],
+        "listingFields": ["title", "state", "timezone"],
+        "userFields": ["firstName", "lastName", "displayName", "email", "protectedData"]
+      },
+      "id": "b28d5234-14fb-41fd-a3fb-164ba170f486",
+      "name": "Fetch Transaction Details",
+      "type": "n8n-nodes-sharetribe.sharetribe",
+      "position": [4176, 1712],
+      "typeVersion": 1,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 3,
+      "credentials": {
+        "sharetribeOAuth2Api": {
+          "id": "credential-id",
+          "name": "Sharetribe Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "listing-title",
+              "name": "listing.title",
+              "type": "string",
+              "value": "={{ $json.listing.title }}"
+            },
+            {
+              "id": "customer-display-name",
+              "name": "customer.displayName",
+              "type": "string",
+              "value": "={{ $json.customer.profile.displayName || [$json.customer.profile.firstName, $json.customer.profile.lastName].filter(Boolean).join(' ') || 'A customer' }}"
+            },
+            {
+              "id": "provider-phone",
+              "name": "provider.phone",
+              "type": "string",
+              "value": "={{ $json.provider.profile.protectedData?.phoneNumber || '' }}"
+            },
+            {
+              "id": "marketplace-name",
+              "name": "marketplace.name",
+              "type": "string",
+              "value": "={{ $('Fetch Marketplace Data').first().json.name }}"
+            },
+            {
+              "id": "booking-start-formatted",
+              "name": "booking.startFormatted",
+              "type": "string",
+              "value": "={{ $json.booking?.start ? DateTime.fromISO($json.booking?.displayStart || $json.booking?.start).setZone($json.listing.availabilityPlan?.timezone || 'UTC').toFormat('ccc, LLL d, yyyy, h:mm a ZZZZ') : '' }}"
+            },
+            {
+              "id": "booking-end-formatted",
+              "name": "booking.endFormatted",
+              "type": "string",
+              "value": "={{ $json.booking?.end ? DateTime.fromISO($json.booking?.displayEnd || $json.booking?.end).setZone($json.listing.availabilityPlan?.timezone || 'UTC').toFormat('ccc, LLL d, yyyy, h:mm a ZZZZ') : '' }}"
+            },
+            {
+              "id": "payin",
+              "name": "payin",
+              "type": "string",
+              "value": "={{ $json.payinTotal ? ($json.payinTotal.amount / 100).toFixed(2) + ' ' + $json.payinTotal.currency : '' }}"
+            },
+            {
+              "id": "payout",
+              "name": "payout",
+              "type": "string",
+              "value": "={{ $json.payoutTotal ? ($json.payoutTotal.amount / 100).toFixed(2) + ' ' + $json.payoutTotal.currency : '' }}"
+            },
+            {
+              "id": "transaction-process-name",
+              "name": "transactionProcessName",
+              "type": "string",
+              "value": "={{ $json.processName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "43aecfef-d9cd-46df-a247-4e80d4041e34",
+      "name": "Prepare Provider SMS Fields",
+      "type": "n8n-nodes-base.set",
+      "position": [4400, 1712],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "provider-has-phone",
+              "leftValue": "={{ $json.provider.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f9e87c-3a4d-4f1b-8e02-9d1c4e3fa5b6",
+      "name": "Provider Has Phone Number?",
+      "type": "n8n-nodes-base.if",
+      "position": [4624, 1712],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.transactionProcessName }}",
+                    "rightValue": "default-inquiry",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "default-inquiry"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.transactionProcessName }}",
+                    "rightValue": "default-booking",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "default-booking"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.transactionProcessName }}",
+                    "rightValue": "default-negotiation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "default-negotiation"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.transactionProcessName }}",
+                    "rightValue": "default-purchase",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "default-purchase"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2e8a7b1-9d3c-4f5e-a1b8-7e2d9f4c6a83",
+      "name": "Route By Process Name",
+      "type": "n8n-nodes-base.switch",
+      "position": [4848, 1712],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sms-body",
+              "name": "smsBody",
+              "type": "string",
+              "value": "=[{{ $json.marketplace.name }}]\nNew inquiry from {{ $json.customer.displayName }} about \"{{ $json.listing.title }}\".\nOpen the marketplace to view details."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a3f1e9c2-4b7d-4a8e-b6c9-1d8f3e5a7c92",
+      "name": "Build Inquiry SMS",
+      "type": "n8n-nodes-base.set",
+      "position": [5168, 1424],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sms-body",
+              "name": "smsBody",
+              "type": "string",
+              "value": "=[{{ $json.marketplace.name }}]\nNew booking from {{ $json.customer.displayName }} for \"{{ $json.listing.title }}\".{{ $json.booking.startFormatted ? '\\nWhen: ' + $json.booking.startFormatted + ' to ' + $json.booking.endFormatted : '' }}{{ $json.payin ? '\\nCustomer pays: ' + $json.payin : '' }}{{ $json.payout ? '\\nYou earn: ' + $json.payout : '' }}\nOpen the marketplace to view details."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b4e2f8d3-5c8e-4b9f-a7d8-2e9c4f6b8d13",
+      "name": "Build Booking SMS",
+      "type": "n8n-nodes-base.set",
+      "position": [5168, 1616],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sms-body",
+              "name": "smsBody",
+              "type": "string",
+              "value": "=[{{ $json.marketplace.name }}]\nNew negotiation from {{ $json.customer.displayName }} on \"{{ $json.listing.title }}\".{{ $json.payin ? '\\nOffer total: ' + $json.payin : '' }}{{ $json.payout ? '\\nYour earnings if accepted: ' + $json.payout : '' }}\nOpen the marketplace to view details."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c5d3e9f4-6a9f-4cd1-b8e9-3f1d5e7c9e24",
+      "name": "Build Negotiation SMS",
+      "type": "n8n-nodes-base.set",
+      "position": [5168, 1808],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sms-body",
+              "name": "smsBody",
+              "type": "string",
+              "value": "=[{{ $json.marketplace.name }}]\nNew purchase from {{ $json.customer.displayName }} of \"{{ $json.listing.title }}\".{{ $json.payin ? '\\nCustomer paid: ' + $json.payin : '' }}{{ $json.payout ? '\\nYou earn: ' + $json.payout : '' }}\nOpen the marketplace to view details."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d6e4f1a5-7b1a-4de2-c9f1-4a2e6f8d1f35",
+      "name": "Build Purchase SMS",
+      "type": "n8n-nodes-base.set",
+      "position": [5168, 2000],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "from": "+1234567890",
+        "to": "={{ $json.provider.phone }}",
+        "message": "={{ $json.smsBody }}",
+        "options": {}
+      },
+      "id": "f72f0940-990b-4467-a6b6-babf9a35d366",
+      "name": "Send SMS To Provider",
+      "type": "n8n-nodes-base.twilio",
+      "position": [5488, 1712],
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "When New Transaction Initiated": {
+      "main": [
+        [
+          {
+            "node": "Set Marketplace URL",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Assets With Transaction Event",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Set Marketplace URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Marketplace Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Marketplace Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Assets With Transaction Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Assets With Transaction Event": {
+      "main": [
+        [
+          {
+            "node": "Fetch Transaction Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Transaction Details": {
+      "main": [
+        [
+          {
+            "node": "Prepare Provider SMS Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Provider SMS Fields": {
+      "main": [
+        [
+          {
+            "node": "Provider Has Phone Number?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Provider Has Phone Number?": {
+      "main": [
+        [
+          {
+            "node": "Route By Process Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route By Process Name": {
+      "main": [
+        [
+          {
+            "node": "Build Inquiry SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Booking SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Negotiation SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Purchase SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Inquiry SMS": {
+      "main": [
+        [
+          {
+            "node": "Send SMS To Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Booking SMS": {
+      "main": [
+        [
+          {
+            "node": "Send SMS To Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Negotiation SMS": {
+      "main": [
+        [
+          {
+            "node": "Send SMS To Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Purchase SMS": {
+      "main": [
+        [
+          {
+            "node": "Send SMS To Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "sharetribe-public-template"
+  }
+}
